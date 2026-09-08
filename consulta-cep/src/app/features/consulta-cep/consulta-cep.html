@@ -1,0 +1,152 @@
+<main class="pagina" aria-labelledby="titulo-consulta">
+  <header class="cabecalho">
+    <svg class="icone-titulo" aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5Z" />
+    </svg>
+    <div>
+      <h1 id="titulo-consulta">Buscar CEP</h1>
+      <p>Consulta publica de endereco</p>
+    </div>
+  </header>
+
+  <form [formGroup]="formulario" (ngSubmit)="buscar()" novalidate>
+    <section class="barra-consulta" aria-label="Formulario de consulta de CEP">
+      <div class="campo-busca">
+        <label class="sr-only" for="cep">CEP</label>
+        <input
+          #cepInput
+          id="cep"
+          type="text"
+          inputmode="numeric"
+          autocomplete="postal-code"
+          placeholder="00000-000"
+          maxlength="9"
+          formControlName="cep"
+          aria-describedby="cep-erro"
+          [attr.aria-invalid]="campoCepInvalido() || cepComCaracteresInvalidos()"
+          (input)="aoDigitarCep($event)"
+        />
+      </div>
+
+      <button class="botao-primario" type="submit" [disabled]="!podeBuscar()">
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d="m21 20-5.4-5.4a7 7 0 1 0-1.4 1.4L19.6 21 21 20ZM5 10a5 5 0 1 1 10 0A5 5 0 0 1 5 10Z" />
+        </svg>
+        @if (carregando()) {
+          Buscando...
+        } @else {
+          Buscar
+        }
+      </button>
+
+      <button class="botao-secundario" type="button" (click)="limpar()">
+        <span aria-hidden="true">x</span>
+        Limpar
+      </button>
+    </section>
+
+    <section id="cep-erro" class="area-feedback" aria-live="polite" aria-atomic="true">
+      @if (mensagemValidacaoCep()) {
+        <p class="feedback feedback-erro">{{ mensagemValidacaoCep() }}</p>
+      } @else if (mensagemErro()) {
+        <p class="feedback feedback-erro">{{ mensagemErro() }}</p>
+      } @else if (mensagemSucesso()) {
+        <p class="feedback feedback-sucesso">{{ mensagemSucesso() }}</p>
+      }
+    </section>
+
+    <section class="conteudo" aria-label="Resultado da consulta">
+      <section class="cartao" aria-labelledby="titulo-endereco">
+        <div class="titulo-cartao">
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M12 3 3 10.2l1.2 1.6L5 11.2V21h14v-9.8l.8.6 1.2-1.6L12 3Zm5 16h-3v-5h-4v5H7v-9.4l5-4 5 4V19Z" />
+          </svg>
+          <h2 id="titulo-endereco">Endereco</h2>
+        </div>
+
+        <div class="grade-endereco">
+          <div class="campo campo-largo">
+            <label for="logradouro">Endereco</label>
+            <input id="logradouro" type="text" formControlName="logradouro" autocomplete="address-line1" />
+          </div>
+
+          <div class="campo campo-largo">
+            <label for="bairro">Bairro</label>
+            <input id="bairro" type="text" formControlName="bairro" autocomplete="address-level3" />
+          </div>
+
+          <div class="campo campo-largo">
+            <label for="complemento">Complemento retornado</label>
+            <input id="complemento" type="text" formControlName="complemento" />
+          </div>
+
+          <div class="campo">
+            <label for="cidade">Cidade</label>
+            <input id="cidade" type="text" formControlName="cidade" autocomplete="address-level2" />
+          </div>
+
+          <div class="campo campo-uf">
+            <label for="uf">UF</label>
+            <input id="uf" type="text" formControlName="uf" maxlength="2" autocomplete="address-level1" />
+          </div>
+        </div>
+      </section>
+
+      <section class="cartao" aria-labelledby="titulo-detalhes">
+        <div class="titulo-cartao">
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M7 2h10v2h3v18H4V4h3V2Zm2 2v2h6V4H9ZM6 6v14h12V6h-1v2H7V6H6Zm3 5h6v2H9v-2Zm0 4h6v2H9v-2Z" />
+          </svg>
+          <h2 id="titulo-detalhes">Informacoes Detalhadas</h2>
+        </div>
+
+        @if (enderecoEncontrado(); as endereco) {
+          <dl class="grade-detalhes">
+            <div>
+              <dt>CEP</dt>
+              <dd>{{ endereco.cep || 'Nao informado' }}</dd>
+            </div>
+            <div>
+              <dt>Estado</dt>
+              <dd>{{ endereco.estado || 'Nao informado' }}</dd>
+            </div>
+            <div>
+              <dt>Regiao</dt>
+              <dd>{{ endereco.regiao || 'Nao informado' }}</dd>
+            </div>
+            <div>
+              <dt>Codigo IBGE</dt>
+              <dd>{{ endereco.codigoIbge || 'Nao informado' }}</dd>
+            </div>
+            <div>
+              <dt>DDD</dt>
+              <dd>{{ endereco.ddd || 'Nao informado' }}</dd>
+            </div>
+            <div>
+              <dt>SIAFI</dt>
+              <dd>{{ endereco.siafi || 'Nao informado' }}</dd>
+            </div>
+            <div>
+              <dt>GIA</dt>
+              <dd>{{ endereco.gia || 'Nao informado' }}</dd>
+            </div>
+            <div>
+              <dt>Complemento</dt>
+              <dd>{{ endereco.complemento || 'Nao informado' }}</dd>
+            </div>
+            <div>
+              <dt>Unidade</dt>
+              <dd>{{ endereco.unidade || 'Nao informado' }}</dd>
+            </div>
+            <div class="detalhe-largo">
+              <dt>Unidade retornada</dt>
+              <dd>{{ endereco.unidade || 'Nao informado' }}</dd>
+            </div>
+          </dl>
+        } @else {
+          <p class="detalhes-vazio">As informacoes detalhadas serao exibidas apos uma consulta bem-sucedida.</p>
+        }
+      </section>
+    </section>
+  </form>
+</main>
