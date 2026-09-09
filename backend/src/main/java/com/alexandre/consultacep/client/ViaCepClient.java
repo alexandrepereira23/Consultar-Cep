@@ -4,18 +4,17 @@ import com.alexandre.consultacep.domain.Endereco;
 import com.alexandre.consultacep.exception.CepNaoEncontradoException;
 import com.alexandre.consultacep.exception.RespostaInvalidaException;
 import com.alexandre.consultacep.exception.ServicoIndisponivelException;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
-import java.time.Duration;
-
 @Component
 public class ViaCepClient implements ProvedorCep {
+
+    private static final String CEP_COM_MASCARA = "\\d{5}-\\d{3}";
 
     private final RestClient restClient;
 
@@ -31,24 +30,44 @@ public class ViaCepClient implements ProvedorCep {
                     .retrieve()
                     .onStatus(HttpStatusCode::isError, (req, res) -> {
                         if (res.getStatusCode() == HttpStatus.BAD_REQUEST) {
-                            throw new RespostaInvalidaException("Formato de CEP invalido enviado ao ViaCEP.");
+                            throw new RespostaInvalidaException("Fornecedor retornou status 400 para a consulta de CEP.");
                         }
-                        throw new ServicoIndisponivelException("O ViaCEP retornou status " + res.getStatusCode());
+                        throw new ServicoIndisponivelException("Fornecedor retornou status " + res.getStatusCode() + ".");
                     })
                     .body(ViaCepResponse.class);
 
-            if (response == null) {
-                throw new RespostaInvalidaException("Resposta nula do ViaCEP");
-            }
+            validarResposta(response);
 
             if (Boolean.TRUE.equals(response.erro())) {
-                throw new CepNaoEncontradoException("O CEP " + cep + " nao foi encontrado no ViaCEP.");
+                throw new CepNaoEncontradoException("Fornecedor indicou CEP inexistente: " + cep + ".");
             }
 
             return converterParaDominio(response);
 
+        } catch (CepNaoEncontradoException | RespostaInvalidaException | ServicoIndisponivelException e) {
+            throw e;
+        } catch (ResourceAccessException e) {
+            throw new ServicoIndisponivelException("Falha de acesso ao fornecedor de CEP: " + e.getMessage());
         } catch (RestClientException e) {
-            throw new ServicoIndisponivelException("Falha ao comunicar com o ViaCEP: " + e.getMessage());
+            throw new RespostaInvalidaException("Resposta do fornecedor de CEP não pôde ser processada: " + e.getMessage());
+        }
+    }
+
+    private void validarResposta(ViaCepResponse viaCep) {
+        if (viaCep == null) {
+            throw new RespostaInvalidaException("Fornecedor retornou resposta nula.");
+        }
+        if (Boolean.TRUE.equals(viaCep.erro())) {
+            return;
+        }
+        if (viaCep.cep() == null || !viaCep.cep().matches(CEP_COM_MASCARA)) {
+            throw new RespostaInvalidaException("Fornecedor retornou CEP ausente ou inválido.");
+        }
+        if (viaCep.localidade() == null || viaCep.localidade().isBlank()) {
+            throw new RespostaInvalidaException("Fornecedor retornou cidade ausente.");
+        }
+        if (viaCep.uf() == null || viaCep.uf().isBlank() || viaCep.uf().length() != 2) {
+            throw new RespostaInvalidaException("Fornecedor retornou UF ausente ou inválida.");
         }
     }
 
@@ -71,4 +90,3 @@ public class ViaCepClient implements ProvedorCep {
         );
     }
 }
-

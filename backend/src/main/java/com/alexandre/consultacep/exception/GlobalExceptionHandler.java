@@ -17,11 +17,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(CepInvalidoException.class)
     public ResponseEntity<ErroResposta> handleCepInvalido(CepInvalidoException ex, HttpServletRequest request) {
-        logger.warn("CEP Invalido: {}", ex.getMessage());
+        logger.warn("CEP inválido: {}", ex.getMessage());
         ErroResposta erro = new ErroResposta(
             HttpStatus.BAD_REQUEST.value(),
             "CEP_INVALIDO",
-            ex.getMessage(),
+            "O CEP informado é inválido. Use o formato 00000000 ou 00000-000.",
             request.getRequestURI(),
             Instant.now()
         );
@@ -30,11 +30,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(CepNaoEncontradoException.class)
     public ResponseEntity<ErroResposta> handleCepNaoEncontrado(CepNaoEncontradoException ex, HttpServletRequest request) {
-        logger.info("CEP Nao Encontrado: {}", ex.getMessage());
+        logger.info("CEP não encontrado: {}", ex.getMessage());
         ErroResposta erro = new ErroResposta(
             HttpStatus.NOT_FOUND.value(),
             "CEP_NAO_ENCONTRADO",
-            ex.getMessage(),
+            "O CEP informado não foi encontrado.",
             request.getRequestURI(),
             Instant.now()
         );
@@ -43,11 +43,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ServicoIndisponivelException.class)
     public ResponseEntity<ErroResposta> handleServicoIndisponivel(ServicoIndisponivelException ex, HttpServletRequest request) {
-        logger.error("Servico Indisponivel: {}", ex.getMessage());
+        logger.error("Serviço de CEP indisponível: {}", ex.getMessage());
         ErroResposta erro = new ErroResposta(
             HttpStatus.SERVICE_UNAVAILABLE.value(),
             "SERVICO_CEP_INDISPONIVEL",
-            "O servico de consulta de CEP esta temporariamente indisponivel.",
+            "O serviço de consulta de CEP está temporariamente indisponível.",
             request.getRequestURI(),
             Instant.now()
         );
@@ -56,11 +56,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(RespostaInvalidaException.class)
     public ResponseEntity<ErroResposta> handleRespostaInvalida(RespostaInvalidaException ex, HttpServletRequest request) {
-        logger.error("Resposta Invalida: {}", ex.getMessage());
+        logger.error("Resposta inválida do fornecedor de CEP: {}", ex.getMessage());
         ErroResposta erro = new ErroResposta(
             HttpStatus.BAD_GATEWAY.value(),
             "RESPOSTA_FORNECEDOR_INVALIDA",
-            "O fornecedor de CEP retornou uma resposta invalida.",
+            "O serviço de consulta de CEP retornou uma resposta inválida.",
             request.getRequestURI(),
             Instant.now()
         );
@@ -69,7 +69,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErroResposta> handleGenerico(Exception ex, HttpServletRequest request) {
-        logger.error("Erro Interno Inesperado", ex);
+        logger.error("Erro interno inesperado", ex);
         ErroResposta erro = new ErroResposta(
             HttpStatus.INTERNAL_SERVER_ERROR.value(),
             "ERRO_INTERNO",
@@ -80,4 +80,3 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(erro);
     }
 }
-

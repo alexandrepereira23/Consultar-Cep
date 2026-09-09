@@ -43,29 +43,26 @@ public class ConsultaCepService {
                 endereco.ddd(),
                 endereco.siafi(),
                 endereco.gia(),
-                null, // localizacao e sempre null nesta fase
+                null,
                 endereco.fonte()
         );
     }
 
     private Endereco consultarEValidar(String cep) {
         if (cep == null || cep.isBlank()) {
-            throw new CepInvalidoException("O CEP nao pode ser vazio.");
+            throw new CepInvalidoException("O CEP não pode ser vazio.");
         }
 
         String cepNormalizado = cep.replace("-", "");
 
         if (!cepNormalizado.matches("\\d{8}")) {
-            throw new CepInvalidoException("O CEP deve conter exatamente 8 numeros.");
+            throw new CepInvalidoException("O CEP deve conter exatamente 8 números.");
         }
         
-        // Verifica se o CEP possuia tracinho, mas em posicao incorreta ou letras se misturando
-        // Regex para formatos aceitos: "00000000" ou "00000-000"
         if (!cep.matches("\\d{8}") && !cep.matches("\\d{5}-\\d{3}")) {
-             throw new CepInvalidoException("Formato de CEP invalido. Use 00000000 ou 00000-000.");
+              throw new CepInvalidoException("Formato de CEP inválido. Use 00000000 ou 00000-000.");
         }
 
         return provedorCep.consultar(cepNormalizado);
     }
 }
-
