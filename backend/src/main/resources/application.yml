@@ -1,0 +1,13 @@
+server:
+  port: 8080
+
+integracoes:
+  viacep:
+    url-base: ${VIACEP_URL_BASE:https://viacep.com.br/ws}
+    timeout-conexao: 3s
+    timeout-leitura: 5s
+
+aplicacao:
+  cors:
+    origens-permitidas: http://localhost:4200
+
