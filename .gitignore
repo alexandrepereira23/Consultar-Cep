@@ -5,7 +5,11 @@ node_modules/
 dist/
 .angular/
 coverage/
+out-tsc/
 out/
+bazel-out/
+
+# Java build outputs for future backend work
 target/
 bin/
 
@@ -24,8 +28,14 @@ pnpm-debug.log*
 # IDE and editor files
 .idea/
 .vscode/
+.project
+.classpath
+.settings/
+*.launch
+*.sublime-workspace
 *.swp
 *.swo
+.history/
 
 # Operating system files
 .DS_Store

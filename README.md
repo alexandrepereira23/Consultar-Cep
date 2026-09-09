@@ -1,10 +1,15 @@
 # Consulta de CEP
 
-Aplicacao web em Angular para consulta de endereco por CEP brasileiro usando o servico publico ViaCEP.
+Monorepo preparado para manter o painel Angular de consulta de CEP e receber futuramente uma API Spring Boot.
 
 Autor: Alexandre Henrique Pereira Pires
 
-## Funcionalidades
+## Estado Atual
+
+- `frontend/`: aplicacao Angular para consulta de endereco por CEP brasileiro usando o servico publico ViaCEP.
+- `backend/`: ainda nao implementado. A pasta sera criada em uma etapa futura.
+
+## Funcionalidades do Frontend
 
 - Consulta de endereco por CEP com ou sem mascara.
 - Mascara visual no formato `00000-000`.
@@ -53,7 +58,7 @@ Informacoes detalhadas:
 ## Pre-requisitos
 
 - Node.js compativel com Angular 21.
-- npm.
+- npm compativel com o campo `packageManager` em `frontend/package.json`.
 
 Versoes utilizadas no desenvolvimento local:
 
@@ -64,14 +69,21 @@ Versoes utilizadas no desenvolvimento local:
 ## Instalacao
 
 ```bash
-cd consulta-cep
+cd frontend
 npm install
+```
+
+Para uma instalacao limpa baseada no lockfile:
+
+```bash
+cd frontend
+npm ci
 ```
 
 ## Execucao Local
 
 ```bash
-cd consulta-cep
+cd frontend
 npm start
 ```
 
@@ -80,23 +92,34 @@ A aplicacao fica disponivel em `http://localhost:4200/`.
 ## Testes
 
 ```bash
-cd consulta-cep
-npm test
+cd frontend
+npm test -- --watch=false
 ```
 
 ## Build de Producao
 
 ```bash
-cd consulta-cep
+cd frontend
 npm run build
 ```
 
-O build e gerado em `consulta-cep/dist/`.
+O build e gerado em `frontend/dist/consulta-cep/`.
 
 ## Estrutura Principal
 
 ```text
-consulta-cep/
+Consultar-Cep/
+├── frontend/       # Painel Angular
+├── backend/        # API Spring Boot - implementacao futura
+├── README.md
+├── LICENSE
+└── .gitignore
+```
+
+Estrutura atual do frontend:
+
+```text
+frontend/
   angular.json
   package.json
   package-lock.json
