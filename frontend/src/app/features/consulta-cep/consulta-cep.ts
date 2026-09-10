@@ -185,14 +185,14 @@ export class ConsultaCepComponent implements OnDestroy {
 
   private mensagemParaErro(erro: unknown): string {
     if (!(erro instanceof CepConsultaErro)) {
-      return 'Nao foi possivel consultar o CEP agora. Tente novamente em instantes.';
+      return 'Não foi possível consultar o CEP agora. Tente novamente em instantes.';
     }
 
     const mensagens: Record<typeof erro.tipo, string> = {
-      'cep-invalido': 'Informe um CEP com exatamente oito numeros.',
-      'cep-nao-encontrado': 'CEP nao encontrado. Confira os oito digitos e tente novamente.',
-      'falha-conexao': 'Falha de comunicacao. Verifique sua conexao e tente novamente.',
-      'servico-indisponivel': 'Servico de CEP indisponivel no momento. Tente novamente mais tarde.',
+      'cep-invalido': 'Informe um CEP com exatamente oito números.',
+      'cep-nao-encontrado': 'CEP não encontrado. Confira os oito dígitos e tente novamente.',
+      'falha-conexao': 'Não foi possível conectar à API. Verifique se o backend está em execução.',
+      'servico-indisponivel': 'Serviço de CEP indisponível no momento. Tente novamente mais tarde.',
     };
 
     return mensagens[erro.tipo];

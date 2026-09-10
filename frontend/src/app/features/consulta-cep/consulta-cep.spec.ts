@@ -81,7 +81,7 @@ describe('ConsultaCepComponent', () => {
     botaoBuscar().click();
     fixture.detectChanges();
 
-    expect(textoTela()).toContain('CEP nao encontrado');
+    expect(textoTela()).toContain('CEP não encontrado');
   });
 
   it('mostra mensagem de falha de comunicacao', () => {
@@ -91,7 +91,7 @@ describe('ConsultaCepComponent', () => {
     botaoBuscar().click();
     fixture.detectChanges();
 
-    expect(textoTela()).toContain('Falha de comunicacao');
+    expect(textoTela()).toContain('Não foi possível conectar à API');
   });
 
   it('limpa formulario, mensagens e devolve foco ao CEP', () => {
