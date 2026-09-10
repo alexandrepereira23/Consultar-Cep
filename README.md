@@ -1,50 +1,172 @@
-# Consulta de CEP
+# Consultar CEP
 
-Monorepo que contém o painel Angular de consulta de CEP (Fase 1) e uma API Spring Boot (Fase 2).
+Uma aplicação para consulta de CEP com painel web em Angular e API própria em Spring Boot.
 
-Autor: Alexandre Henrique Pereira Pires
+O fluxo de dados da aplicação funciona da seguinte maneira:
 
-## Estado Atual
+```txt
+Frontend Angular -> API Spring Boot -> ViaCEP
+```
 
-- `frontend/`: aplicação Angular para consulta de endereço por CEP brasileiro.
-- `backend/`: API Spring Boot que atua como gateway para consultas ao ViaCEP, adicionando validações e normalização.
-- O backend está implementado e funcional de maneira independente.
-- O frontend ainda consulta diretamente o ViaCEP.
-- A integração do frontend com o backend será realizada na Fase 3.
+## Funcionalidades atuais
 
-## Funcionalidades do Frontend
+* Consulta de CEP pelo painel web.
+* Preenchimento dos dados principais do endereço.
+* Exibição de informações detalhadas.
+* API REST própria para consulta de CEP.
+* Endpoint básico para consumo por outros sistemas.
+* Endpoint detalhado para painel e consultas completas.
+* Tratamento padronizado de erros.
+* Documentação Swagger/OpenAPI.
 
-- Consulta de endereço por CEP com ou sem máscara.
-- Máscara visual no formato `00000-000`.
-- Validação de CEP obrigatório com exatamente oito números.
-- Rejeição de letras e caracteres inválidos.
-- Busca pelo botão `Buscar` ou pela tecla Enter.
-- Indicação de carregamento durante a consulta.
-- Preenchimento automático dos campos de endereço.
-- Edição manual dos campos após a consulta.
-- Botão `Limpar` para restaurar o estado inicial e devolver o foco ao CEP.
-- Mensagens claras para CEP inválido, CEP inexistente e falhas de comunicação.
-- Layout responsivo com foco visível e HTML semântico.
+## Arquitetura do projeto
 
-## Funcionalidades do Backend (API)
+O projeto está estruturado em um formato monorepo com as seguintes partes:
 
-- Endpoint REST básico: `GET /api/v1/ceps/{cep}`.
-- Endpoint REST detalhado: `GET /api/v1/ceps/{cep}/detalhes`.
-- Aceita CEP sem máscara (`01001000`) ou com máscara (`01001-000`).
-- Validação estrita dos formatos aceitos, retornando `400 Bad Request` para entradas inválidas.
-- Comunicação com a API externa do ViaCEP usando `RestClient`.
-- Padronização da resposta em formato JSON.
-- Retorno 404 Not Found caso o ViaCEP não encontre o CEP.
-- Tratamento de exceções global com mensagens padronizadas.
-- Integração com `springdoc-openapi` para interface Swagger UI.
-- Configuração de CORS para permitir `GET` e `OPTIONS` a partir das origens configuradas.
+```txt
+frontend/   Aplicação Angular
+backend/    API Spring Boot
+```
 
-## Contrato dos Endpoints
+Responsabilidades:
+* Angular: interface visual.
+* Spring Boot: API intermediária, validação, padronização da resposta e comunicação com provedor externo.
+* ViaCEP: provedor externo usado pela API, não diretamente pelo frontend.
 
-### `GET /api/v1/ceps/{cep}`
+## Tecnologias utilizadas
 
-Resposta básica:
+**Frontend:**
+* Angular
+* TypeScript
+* RxJS
+* Vitest
 
+**Backend:**
+* Java
+* Spring Boot
+* Spring Web
+* Springdoc/OpenAPI
+* Maven
+
+## Como executar o backend
+
+### Pré-requisitos
+* JDK compatível com o projeto.
+* Maven Wrapper incluso no projeto.
+
+### Windows
+```cmd
+cd backend
+mvnw.cmd spring-boot:run
+```
+
+### Linux/macOS
+```bash
+cd backend
+./mvnw spring-boot:run
+```
+
+Por padrão, a API roda em:
+```txt
+http://localhost:8080
+```
+
+## Como executar o frontend
+
+### Pré-requisitos
+* Node.js compatível com Angular 21.
+* npm.
+
+### Comandos
+```cmd
+cd frontend
+npm ci
+npm start
+```
+
+Por padrão, o Angular roda em:
+```txt
+http://localhost:4200
+```
+
+O frontend espera a API em:
+```txt
+http://localhost:8080/api/v1
+```
+
+## Configuração da URL da API no frontend
+
+A configuração da URL da API fica localizada em:
+```txt
+frontend/src/environments/environment.ts
+```
+
+Em ambiente local, o valor atual aponta para:
+```txt
+http://localhost:8080/api/v1
+```
+
+## Como testar
+
+### Frontend
+
+Windows:
+```cmd
+cd frontend
+npm ci
+set NG_CLI_ANALYTICS=false
+set CI=true
+npm test -- --watch=false
+npm run build
+```
+
+Linux/macOS:
+```bash
+cd frontend
+npm ci
+NG_CLI_ANALYTICS=false CI=true npm test -- --watch=false
+NG_CLI_ANALYTICS=false CI=true npm run build
+```
+
+### Backend
+
+Windows:
+```cmd
+cd backend
+mvnw.cmd test
+```
+
+Linux/macOS:
+```bash
+cd backend
+./mvnw test
+```
+
+## Documentação Swagger/OpenAPI
+
+Quando o backend estiver rodando, acesse:
+```txt
+http://localhost:8080/swagger-ui.html
+```
+
+## Endpoints da API
+
+### Endpoint básico
+
+```http
+GET /api/v1/ceps/{cep}
+```
+
+Uso recomendado:
+* Sistemas externos que precisam apenas dos dados principais do endereço.
+* Exemplos: cadastro de usuários, clientes, fornecedores, pacientes etc.
+
+Exemplo de requisição:
+```http
+GET http://localhost:8080/api/v1/ceps/01001000
+```
+
+Exemplo de resposta:
 ```json
 {
   "cep": "01001-000",
@@ -55,10 +177,22 @@ Resposta básica:
 }
 ```
 
-### `GET /api/v1/ceps/{cep}/detalhes`
+### Endpoint detalhado
 
-Resposta detalhada:
+```http
+GET /api/v1/ceps/{cep}/detalhes
+```
 
+Uso recomendado:
+* Painel Angular.
+* Consultas que precisam de dados complementares.
+
+Exemplo de requisição:
+```http
+GET http://localhost:8080/api/v1/ceps/01001000/detalhes
+```
+
+Exemplo de resposta:
 ```json
 {
   "cep": "01001-000",
@@ -79,145 +213,16 @@ Resposta detalhada:
 }
 ```
 
-`localizacao` é tipada como:
+## Formatos de CEP aceitos
 
-```json
-{
-  "latitude": -23.55052,
-  "longitude": -46.633308
-}
-```
+* `01001000`
+* `01001-000`
 
-Nesta fase, o ViaCEP não fornece latitude e longitude. Por isso, o campo `localizacao` permanece `null`.
+A API valida o CEP e retorna erro padronizado quando o formato é inválido.
 
-## Campos Retornados
+## Respostas de erro
 
-Campos principais:
-
-- CEP
-- Endereço (logradouro)
-- Bairro
-- Cidade (Localidade)
-- UF
-
-Informações detalhadas adicionais (para uso futuro ou interfaces estendidas):
-
-- Estado
-- Região
-- Código IBGE
-- DDD
-- SIAFI
-- GIA
-- Complemento
-- Unidade
-- Localização tipada, atualmente nula
-- Fonte interna usada para montar os dados
-
-## Tecnologias Utilizadas
-
-**Frontend:**
-- Angular 21.
-- TypeScript com configuração estrita.
-- Componentes standalone.
-- Reactive Forms.
-- Vitest via Angular CLI.
-- CSS sem biblioteca visual externa.
-
-**Backend:**
-- Java 21
-- Spring Boot 4.1.1
-- Spring Web (REST Controllers e RestClient)
-- JUnit 5 e Mockito
-- Maven
-- Springdoc OpenAPI 3.1.1 (Swagger)
-
-## Pré-requisitos
-
-- Node.js (compatível com Angular 21) e npm.
-- Java 21 JDK (Para rodar e compilar o backend).
-- Maven 3.9+ (O projeto inclui o Maven Wrapper `mvnw`).
-
-## Execução Local (Backend)
-
-O backend roda por padrão na porta `8080`.
-
-### Linux e macOS
-
-```bash
-cd backend
-./mvnw spring-boot:run
-./mvnw test
-./mvnw clean package
-```
-
-### Windows CMD ou PowerShell
-
-```cmd
-cd backend
-mvnw.cmd spring-boot:run
-mvnw.cmd test
-mvnw.cmd clean package
-```
-
-Acesse a documentação da API via Swagger UI em:
-
-- `http://localhost:8080/swagger-ui.html`
-- `http://localhost:8080/swagger-ui/index.html`
-
-O endereço `/swagger-ui.html` redireciona para `/swagger-ui/index.html`. A especificação OpenAPI fica disponível em `http://localhost:8080/v3/api-docs`.
-
-## Execução Local (Frontend)
-
-O frontend roda por padrão na porta `4200`.
-
-```bash
-cd frontend
-npm install
-npm start
-```
-
-A aplicação fica disponível em `http://localhost:4200/`.
-
-## Testes
-
-**Frontend:**
-```bash
-cd frontend
-npm test -- --watch=false
-```
-
-**Backend:**
-
-Linux e macOS:
-
-```bash
-cd backend
-./mvnw test
-```
-
-Windows CMD ou PowerShell:
-
-```cmd
-cd backend
-mvnw.cmd test
-```
-
-## Serviço Externo de CEP
-
-Atualmente o backend funciona como um gateway para o **ViaCEP**, e realiza as requisições HTTPS para `https://viacep.com.br/ws/{cep}/json/`. A URL e os timeouts são configurados via `application.yml`.
-
-## Tratamento de Erros
-
-O backend padroniza os erros nos seguintes cenários:
-
-- `400 Bad Request`, `CEP_INVALIDO`: entrada fora dos formatos `00000000` ou `00000-000`.
-- `404 Not Found`, `CEP_NAO_ENCONTRADO`: CEP inexistente.
-- `502 Bad Gateway`, `RESPOSTA_FORNECEDOR_INVALIDA`: resposta nula, malformada, incompatível ou sem campos essenciais.
-- `503 Service Unavailable`, `SERVICO_CEP_INDISPONIVEL`: timeout, falha de DNS, conexão recusada ou erro HTTP 5xx do fornecedor.
-- `500 Internal Server Error`, `ERRO_INTERNO`: erro inesperado.
-
-Formato do erro:
-
+Formato padrão:
 ```json
 {
   "status": 404,
@@ -228,34 +233,46 @@ Formato do erro:
 }
 ```
 
-As respostas públicas não expõem URL externa, stack trace, nomes de classes, mensagens internas da biblioteca HTTP nem detalhes de conexão.
+Principais erros:
 
-## CORS
+| Status | Código | Quando ocorre |
+| --- | --- | --- |
+| 400 | `CEP_INVALIDO` | CEP em formato inválido |
+| 404 | `CEP_NAO_ENCONTRADO` | CEP não encontrado |
+| 500 | `ERRO_INTERNO` | Erro interno inesperado |
+| 502 | `RESPOSTA_FORNECEDOR_INVALIDA` | Provedor externo retornou resposta inválida |
+| 503 | `SERVICO_CEP_INDISPONIVEL` | Serviço externo temporariamente indisponível |
 
-As origens permitidas são configuráveis por `application.yml` e variáveis de ambiente:
+## Uso em outros sistemas
 
-```yaml
-aplicacao:
-  cors:
-    origens-permitidas: http://localhost:4200
+Para integrações com outros sistemas, como telas de cadastro de usuários, clientes, fornecedores ou pacientes, recomenda-se utilizar inicialmente o endpoint básico:
+
+```http
+GET /api/v1/ceps/{cep}
 ```
 
-Métodos permitidos pelo CORS:
+Esse endpoint retorna apenas os dados principais necessários para preenchimento automático de endereço. Quando forem necessários dados complementares, utilize o endpoint detalhado:
 
-- `GET`
-- `OPTIONS`
+```http
+GET /api/v1/ceps/{cep}/detalhes
+```
 
-Não é utilizado `*` como origem permitida.
+## Limitações atuais
 
-## Situação Atual do Frontend
+* A API ainda não possui autenticação.
+* A API ainda não possui cache.
+* A API ainda não possui rate limit.
+* A API ainda depende do ViaCEP como provedor externo.
+* `localizacao` retorna `null` nesta fase, porque o ViaCEP não fornece latitude e longitude.
+* O projeto ainda está preparado para execução local.
 
-O frontend Angular permanece inalterado nesta fase e ainda consulta diretamente o ViaCEP. A integração com o backend será feita na Fase 3.
+## Próximas evoluções planejadas
 
-## Próximos Passos
-
-- Configurar o frontend para chamar o backend criado (`http://localhost:8080/api/v1/ceps`) ao invés de bater direto no ViaCEP.
-- Adicionar logs, métricas e rastreabilidade.
-
-## Licença
-
-Este projeto está licenciado sob a licença MIT. Consulte `LICENSE` para mais detalhes.
+* seleção de campos na resposta;
+* autenticação por API key para consumo externo;
+* cache de consultas;
+* rate limit;
+* fallback com outro provedor, como BrasilAPI;
+* Docker;
+* deploy;
+* integração com sistemas como Voll.med.
