@@ -26,6 +26,56 @@ public class CepController {
 
     private final ConsultaCepService service;
 
+    private static final String ERRO_CEP_INVALIDO = """
+            {
+              "status": 400,
+              "erro": "CEP_INVALIDO",
+              "mensagem": "O CEP informado é inválido. Use o formato 00000000 ou 00000-000.",
+              "caminho": "/api/v1/ceps/123",
+              "timestamp": "2026-09-09T12:00:00Z"
+            }
+            """;
+
+    private static final String ERRO_CEP_NAO_ENCONTRADO = """
+            {
+              "status": 404,
+              "erro": "CEP_NAO_ENCONTRADO",
+              "mensagem": "O CEP informado não foi encontrado.",
+              "caminho": "/api/v1/ceps/99999999",
+              "timestamp": "2026-09-09T12:00:00Z"
+            }
+            """;
+
+    private static final String ERRO_RESPOSTA_FORNECEDOR_INVALIDA = """
+            {
+              "status": 502,
+              "erro": "RESPOSTA_FORNECEDOR_INVALIDA",
+              "mensagem": "O serviço de consulta de CEP retornou uma resposta inválida.",
+              "caminho": "/api/v1/ceps/01001000",
+              "timestamp": "2026-09-09T12:00:00Z"
+            }
+            """;
+
+    private static final String ERRO_SERVICO_CEP_INDISPONIVEL = """
+            {
+              "status": 503,
+              "erro": "SERVICO_CEP_INDISPONIVEL",
+              "mensagem": "O serviço de consulta de CEP está temporariamente indisponível.",
+              "caminho": "/api/v1/ceps/01001000",
+              "timestamp": "2026-09-09T12:00:00Z"
+            }
+            """;
+
+    private static final String ERRO_INTERNO = """
+            {
+              "status": 500,
+              "erro": "ERRO_INTERNO",
+              "mensagem": "Ocorreu um erro interno inesperado.",
+              "caminho": "/api/v1/ceps/01001000",
+              "timestamp": "2026-09-09T12:00:00Z"
+            }
+            """;
+
     public CepController(ConsultaCepService service) {
         this.service = service;
     }
@@ -43,19 +93,11 @@ public class CepController {
                       "uf": "SP"
                     }
                     """))),
-            @ApiResponse(responseCode = "400", description = "CEP inválido.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErroResposta.class), examples = @ExampleObject(name = "Erro padronizado", value = """
-                    {
-                      "status": 400,
-                      "erro": "CEP_INVALIDO",
-                      "mensagem": "O CEP informado é inválido. Use o formato 00000000 ou 00000-000.",
-                      "caminho": "/api/v1/ceps/123",
-                      "timestamp": "2026-09-09T12:00:00Z"
-                    }
-                    """))),
-            @ApiResponse(responseCode = "404", description = "CEP não encontrado.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErroResposta.class))),
-            @ApiResponse(responseCode = "502", description = "Resposta inválida do serviço de consulta de CEP.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErroResposta.class))),
-            @ApiResponse(responseCode = "503", description = "Serviço de consulta de CEP temporariamente indisponível.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErroResposta.class))),
-            @ApiResponse(responseCode = "500", description = "Erro interno inesperado.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErroResposta.class)))
+            @ApiResponse(responseCode = "400", description = "CEP inválido.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErroResposta.class), examples = @ExampleObject(name = "CEP inválido", value = ERRO_CEP_INVALIDO))),
+            @ApiResponse(responseCode = "404", description = "CEP não encontrado.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErroResposta.class), examples = @ExampleObject(name = "CEP não encontrado", value = ERRO_CEP_NAO_ENCONTRADO))),
+            @ApiResponse(responseCode = "502", description = "Resposta inválida do serviço de consulta de CEP.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErroResposta.class), examples = @ExampleObject(name = "Resposta inválida do fornecedor", value = ERRO_RESPOSTA_FORNECEDOR_INVALIDA))),
+            @ApiResponse(responseCode = "503", description = "Serviço de consulta de CEP temporariamente indisponível.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErroResposta.class), examples = @ExampleObject(name = "Serviço de CEP indisponível", value = ERRO_SERVICO_CEP_INDISPONIVEL))),
+            @ApiResponse(responseCode = "500", description = "Erro interno inesperado.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErroResposta.class), examples = @ExampleObject(name = "Erro interno", value = ERRO_INTERNO)))
     })
     public ResponseEntity<EnderecoBasicoResponse> consultarBasico(
             @Parameter(description = "CEP a ser consultado. Exemplos: 01001000 ou 01001-000.", example = "01001-000")
@@ -86,11 +128,11 @@ public class CepController {
                       "fonte": "VIACEP"
                     }
                     """))),
-            @ApiResponse(responseCode = "400", description = "CEP inválido.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErroResposta.class))),
-            @ApiResponse(responseCode = "404", description = "CEP não encontrado.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErroResposta.class))),
-            @ApiResponse(responseCode = "502", description = "Resposta inválida do serviço de consulta de CEP.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErroResposta.class))),
-            @ApiResponse(responseCode = "503", description = "Serviço de consulta de CEP temporariamente indisponível.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErroResposta.class))),
-            @ApiResponse(responseCode = "500", description = "Erro interno inesperado.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErroResposta.class)))
+            @ApiResponse(responseCode = "400", description = "CEP inválido.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErroResposta.class), examples = @ExampleObject(name = "CEP inválido", value = ERRO_CEP_INVALIDO))),
+            @ApiResponse(responseCode = "404", description = "CEP não encontrado.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErroResposta.class), examples = @ExampleObject(name = "CEP não encontrado", value = ERRO_CEP_NAO_ENCONTRADO))),
+            @ApiResponse(responseCode = "502", description = "Resposta inválida do serviço de consulta de CEP.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErroResposta.class), examples = @ExampleObject(name = "Resposta inválida do fornecedor", value = ERRO_RESPOSTA_FORNECEDOR_INVALIDA))),
+            @ApiResponse(responseCode = "503", description = "Serviço de consulta de CEP temporariamente indisponível.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErroResposta.class), examples = @ExampleObject(name = "Serviço de CEP indisponível", value = ERRO_SERVICO_CEP_INDISPONIVEL))),
+            @ApiResponse(responseCode = "500", description = "Erro interno inesperado.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErroResposta.class), examples = @ExampleObject(name = "Erro interno", value = ERRO_INTERNO)))
     })
     public ResponseEntity<EnderecoDetalhadoResponse> consultarDetalhado(
             @Parameter(description = "CEP a ser consultado. Exemplos: 01001000 ou 01001-000.", example = "01001-000")
