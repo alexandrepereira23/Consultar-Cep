@@ -11,6 +11,10 @@ aplicacao:
   api-key:
     habilitada: ${API_KEY_HABILITADA:false}
     valor: ${API_KEY_VALOR:}
+  rate-limit:
+    habilitado: ${RATE_LIMIT_HABILITADO:true}
+    requisicoes: ${RATE_LIMIT_REQUISICOES:60}
+    janela: ${RATE_LIMIT_JANELA:1m}
   cors:
     origens-permitidas: http://localhost:4200
 

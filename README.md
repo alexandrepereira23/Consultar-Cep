@@ -277,6 +277,51 @@ curl -H "X-API-Key: sua-chave-aqui" http://localhost:8080/api/v1/ceps/01001000
 
 > **Aviso de Segurança**: Nunca versione chaves reais no repositório. Configure sempre via variáveis de ambiente em produção. Esta é uma proteção simples e não substitui autenticação completa para usuários.
 
+## Proteção por Rate Limit
+
+A API possui um mecanismo simples de Rate Limit em memória, pensado para proteger os endpoints `/api/v1/**` contra excesso de requisições. 
+
+O limite é aplicado da seguinte forma:
+1. Por API Key, caso esteja habilitada e seja fornecida na requisição.
+2. Por IP da requisição, caso a API Key não seja fornecida ou esteja desabilitada.
+
+Em ambiente de desenvolvimento, o Rate Limit fica habilitado por padrão com configurações flexíveis, mas pode ser desativado.
+
+Para configurar, defina as variáveis de ambiente:
+
+Windows (cmd):
+```cmd
+set RATE_LIMIT_HABILITADO=true
+set RATE_LIMIT_REQUISICOES=60
+set RATE_LIMIT_JANELA=1m
+```
+
+Windows (PowerShell):
+```powershell
+$env:RATE_LIMIT_HABILITADO="true"
+$env:RATE_LIMIT_REQUISICOES="60"
+$env:RATE_LIMIT_JANELA="1m"
+```
+
+Linux/macOS:
+```bash
+export RATE_LIMIT_HABILITADO=true
+export RATE_LIMIT_REQUISICOES=60
+export RATE_LIMIT_JANELA=1m
+```
+
+Quando o limite de requisições for excedido dentro da janela de tempo, a API retornará `429 Too Many Requests`:
+
+```json
+{
+  "status": 429,
+  "erro": "LIMITE_REQUISICOES_EXCEDIDO",
+  "mensagem": "Limite de requisições excedido. Tente novamente mais tarde.",
+  "caminho": "/api/v1/ceps/01001000",
+  "timestamp": "2026-09-11T12:00:00Z"
+}
+```
+
 ## Uso em outros sistemas
 
 Para integrações com outros sistemas, como telas de cadastro de usuários, clientes, fornecedores ou pacientes, recomenda-se utilizar inicialmente o endpoint básico (lembrando de passar o header `X-API-Key` se a proteção estiver habilitada):
@@ -300,8 +345,8 @@ X-API-Key: sua-chave-aqui
 * O cache é local à instância da aplicação.
 * Em reinício da aplicação, o cache é perdido.
 * Ainda não há Redis ou cache distribuído.
-* Em ambiente com múltiplas instâncias, cada instância teria seu próprio cache.
-* A API ainda não possui rate limit.
+* Em ambiente com múltiplas instâncias, cada instância teria seu próprio cache e rate limit.
+* Rate limit é em memória e não distribuído, portanto, contadores são perdidos no reinício da aplicação.
 * A API ainda depende do ViaCEP como provedor externo.
 * `localizacao` retorna `null` nesta fase, porque o ViaCEP não fornece latitude e longitude.
 * O projeto ainda está preparado para execução local.
@@ -309,8 +354,10 @@ X-API-Key: sua-chave-aqui
 ## Próximas evoluções planejadas
 
 * seleção de campos na resposta;
-* rate limit;
 * fallback com outro provedor, como BrasilAPI;
+* rate limit distribuído com Redis;
+* métricas/observabilidade;
+* gerenciamento de múltiplas API keys;
 * Docker;
 * deploy;
 * integração com sistemas como Voll.med.

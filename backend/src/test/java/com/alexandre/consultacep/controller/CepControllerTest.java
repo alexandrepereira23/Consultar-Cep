@@ -25,9 +25,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.alexandre.consultacep.security.ApiKeyProperties;
+import com.alexandre.consultacep.security.RateLimitProperties;
 
 @WebMvcTest(CepController.class)
-@Import({GlobalExceptionHandler.class, WebConfig.class, ApiKeyProperties.class})
+@Import({GlobalExceptionHandler.class, WebConfig.class, ApiKeyProperties.class, RateLimitProperties.class})
 @TestPropertySource(properties = "aplicacao.cors.origens-permitidas=http://localhost:4200")
 class CepControllerTest {
 
