@@ -14,6 +14,7 @@ class RateLimitFilterTest {
 
     private RateLimitFilter rateLimitFilter;
     private RateLimitProperties properties;
+    private ApiKeyProperties apiKeyProperties;
 
     @BeforeEach
     void setUp() {
@@ -21,7 +22,11 @@ class RateLimitFilterTest {
         properties.setHabilitado(true);
         properties.setRequisicoes(2);
         properties.setJanela(Duration.ofMinutes(1));
-        rateLimitFilter = new RateLimitFilter(properties);
+        
+        apiKeyProperties = new ApiKeyProperties();
+        apiKeyProperties.setHabilitada(false);
+
+        rateLimitFilter = new RateLimitFilter(properties, apiKeyProperties);
     }
 
     @Test
@@ -75,11 +80,15 @@ class RateLimitFilterTest {
 
     @Test
     void deveSepararLimitePorApiKey() throws Exception {
+        apiKeyProperties.setHabilitada(true);
+
         MockHttpServletRequest request1 = new MockHttpServletRequest("GET", "/api/v1/ceps/01001000");
         request1.addHeader("X-API-Key", "key1");
+        request1.setRemoteAddr("127.0.0.1");
 
         MockHttpServletRequest request2 = new MockHttpServletRequest("GET", "/api/v1/ceps/01001000");
         request2.addHeader("X-API-Key", "key2");
+        request2.setRemoteAddr("127.0.0.1");
 
         // Consume 2 from key1
         rateLimitFilter.doFilterInternal(request1, new MockHttpServletResponse(), new MockFilterChain());
@@ -94,6 +103,62 @@ class RateLimitFilterTest {
         rateLimitFilter.doFilterInternal(request2, response2, new MockFilterChain());
         assertEquals(200, response2.getStatus());
         assertEquals("1", response2.getHeader("X-RateLimit-Remaining"));
+    }
+
+    @Test
+    void deveIgnorarApiKeyQuandoDesabilitadaEAgruparPorIp() throws Exception {
+        apiKeyProperties.setHabilitada(false);
+
+        MockHttpServletRequest request1 = new MockHttpServletRequest("GET", "/api/v1/ceps/01001000");
+        request1.addHeader("X-API-Key", "key1");
+        request1.setRemoteAddr("127.0.0.1");
+
+        MockHttpServletRequest request2 = new MockHttpServletRequest("GET", "/api/v1/ceps/01001000");
+        request2.addHeader("X-API-Key", "key2");
+        request2.setRemoteAddr("127.0.0.1");
+
+        MockHttpServletRequest request3 = new MockHttpServletRequest("GET", "/api/v1/ceps/01001000");
+        request3.addHeader("X-API-Key", "key3");
+        request3.setRemoteAddr("127.0.0.1");
+
+        // Request 1 with key1 -> Allowed
+        MockHttpServletResponse response1 = new MockHttpServletResponse();
+        rateLimitFilter.doFilterInternal(request1, response1, new MockFilterChain());
+        assertEquals(200, response1.getStatus());
+
+        // Request 2 with key2 from same IP -> Allowed
+        MockHttpServletResponse response2 = new MockHttpServletResponse();
+        rateLimitFilter.doFilterInternal(request2, response2, new MockFilterChain());
+        assertEquals(200, response2.getStatus());
+
+        // Request 3 with key3 from same IP -> Blocked because limit is 2 per IP
+        MockHttpServletResponse response3 = new MockHttpServletResponse();
+        rateLimitFilter.doFilterInternal(request3, response3, new MockFilterChain());
+        assertEquals(429, response3.getStatus());
+    }
+
+    @Test
+    void deveSepararLimitePorIpQuandoApiKeyDesabilitada() throws Exception {
+        apiKeyProperties.setHabilitada(false);
+
+        MockHttpServletRequest request1 = new MockHttpServletRequest("GET", "/api/v1/ceps/01001000");
+        request1.setRemoteAddr("127.0.0.1");
+
+        MockHttpServletRequest request2 = new MockHttpServletRequest("GET", "/api/v1/ceps/01001000");
+        request2.setRemoteAddr("127.0.0.2");
+
+        // Consume 2 from IP 1
+        rateLimitFilter.doFilterInternal(request1, new MockHttpServletResponse(), new MockFilterChain());
+        rateLimitFilter.doFilterInternal(request1, new MockHttpServletResponse(), new MockFilterChain());
+
+        MockHttpServletResponse response1Blocked = new MockHttpServletResponse();
+        rateLimitFilter.doFilterInternal(request1, response1Blocked, new MockFilterChain());
+        assertEquals(429, response1Blocked.getStatus());
+
+        // IP 2 should still be allowed
+        MockHttpServletResponse response2 = new MockHttpServletResponse();
+        rateLimitFilter.doFilterInternal(request2, response2, new MockFilterChain());
+        assertEquals(200, response2.getStatus());
     }
 
     @Test

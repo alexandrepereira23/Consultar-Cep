@@ -26,12 +26,14 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RateLimitFilter extends OncePerRequestFilter {
 
     private final RateLimitProperties rateLimitProperties;
+    private final ApiKeyProperties apiKeyProperties;
     private final ObjectMapper objectMapper;
     private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
     private static final String API_KEY_HEADER = "X-API-Key";
 
-    public RateLimitFilter(RateLimitProperties rateLimitProperties) {
+    public RateLimitFilter(RateLimitProperties rateLimitProperties, ApiKeyProperties apiKeyProperties) {
         this.rateLimitProperties = rateLimitProperties;
+        this.apiKeyProperties = apiKeyProperties;
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
     }
@@ -75,7 +77,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private String resolverClienteId(HttpServletRequest request) {
         String apiKey = request.getHeader(API_KEY_HEADER);
-        if (apiKey != null && !apiKey.isBlank()) {
+        if (apiKeyProperties.isHabilitada() && apiKey != null && !apiKey.isBlank()) {
             return "apikey:" + apiKey;
         }
         String ip = request.getRemoteAddr();
