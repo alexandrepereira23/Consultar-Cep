@@ -114,4 +114,14 @@ class ProvedorCepComFallbackTest {
         verify(viaCepClient).consultar("01001000");
         verify(brasilApiCepClient).consultar("01001000");
     }
+
+    @Test
+    void quandoViaCepLancaRuntimeException_brasilApiNaoDeveSerChamada_eExcecaoDeveSerPropagada() {
+        when(viaCepClient.consultar(anyString())).thenThrow(new RuntimeException("Erro inesperado"));
+
+        assertThrows(RuntimeException.class, () -> provedorCepComFallback.consultar("01001000"));
+
+        verify(viaCepClient).consultar("01001000");
+        verifyNoInteractions(brasilApiCepClient);
+    }
 }

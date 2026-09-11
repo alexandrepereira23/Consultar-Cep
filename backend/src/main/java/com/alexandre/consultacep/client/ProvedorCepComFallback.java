@@ -2,6 +2,8 @@ package com.alexandre.consultacep.client;
 
 import com.alexandre.consultacep.domain.Endereco;
 import com.alexandre.consultacep.exception.CepNaoEncontradoException;
+import com.alexandre.consultacep.exception.RespostaInvalidaException;
+import com.alexandre.consultacep.exception.ServicoIndisponivelException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Primary;
@@ -29,7 +31,7 @@ public class ProvedorCepComFallback implements ProvedorCep {
         } catch (CepNaoEncontradoException e) {
             log.warn("CEP {} não encontrado no ViaCEP", cep);
             throw e;
-        } catch (Exception e) {
+        } catch (ServicoIndisponivelException | RespostaInvalidaException e) {
             log.error("Falha ao consultar ViaCEP para o CEP {}, tentando fallback para BrasilAPI. Erro: {}", cep, e.getMessage());
             return brasilApiCepClient.consultar(cep);
         }

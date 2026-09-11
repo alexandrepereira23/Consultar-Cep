@@ -5,7 +5,7 @@ Uma aplicação para consulta de CEP com painel web em Angular e API própria em
 O fluxo de dados da aplicação funciona da seguinte maneira:
 
 ```txt
-Frontend Angular -> API Spring Boot -> ViaCEP
+Frontend Angular -> API Spring Boot -> ViaCEP -> BrasilAPI como fallback
 ```
 
 ## Funcionalidades atuais
@@ -341,7 +341,7 @@ X-API-Key: sua-chave-aqui
 ## Limitações atuais
 
 * A API usa cache em memória para consultas bem-sucedidas.
-* O cache reduz chamadas repetidas ao ViaCEP.
+* O cache reduz chamadas repetidas aos provedores externos (ViaCEP e BrasilAPI).
 * O cache é local à instância da aplicação.
 * Em reinício da aplicação, o cache é perdido.
 * Ainda não há Redis ou cache distribuído.

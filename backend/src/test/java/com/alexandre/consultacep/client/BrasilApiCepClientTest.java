@@ -88,10 +88,7 @@ class BrasilApiCepClientTest {
     }
 
     @Test
-    void consultar_QuandoTimeout_DeveLancarServicoIndisponivelException() {
-        // Mock de timeout - aqui podemos apenas simular falha de I/O lançando um erro de requisição se pudéssemos,
-        // mas com MockRestServiceServer sem exceção explícita no builder é difícil.
-        // Simulando que o body foi retornado mal formado para testar RespostaInvalida:
+    void consultar_QuandoJsonInvalido_DeveLancarRespostaInvalidaException() {
         mockServer.expect(requestTo("https://brasilapi.com.br/api/cep/v2/05010000"))
                 .andRespond(withSuccess("not json", MediaType.APPLICATION_JSON));
 
