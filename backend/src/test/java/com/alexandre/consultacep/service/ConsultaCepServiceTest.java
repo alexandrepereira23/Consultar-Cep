@@ -14,12 +14,12 @@ import static org.mockito.Mockito.*;
 
 class ConsultaCepServiceTest {
 
-    private ProvedorCep provedorCep;
+    private CachedProvedorCep provedorCep;
     private ConsultaCepService consultaCepService;
 
     @BeforeEach
     void setUp() {
-        provedorCep = mock(ProvedorCep.class);
+        provedorCep = mock(CachedProvedorCep.class);
         consultaCepService = new ConsultaCepService(provedorCep);
     }
 

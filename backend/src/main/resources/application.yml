@@ -11,3 +11,9 @@ aplicacao:
   cors:
     origens-permitidas: http://localhost:4200
 
+spring:
+  cache:
+    type: caffeine
+    cache-names: enderecosPorCep
+    caffeine:
+      spec: maximumSize=10000,expireAfterWrite=24h

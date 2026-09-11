@@ -260,7 +260,12 @@ GET /api/v1/ceps/{cep}/detalhes
 ## Limitações atuais
 
 * A API ainda não possui autenticação.
-* A API ainda não possui cache.
+* A API usa cache em memória para consultas bem-sucedidas.
+* O cache reduz chamadas repetidas ao ViaCEP.
+* O cache é local à instância da aplicação.
+* Em reinício da aplicação, o cache é perdido.
+* Ainda não há Redis ou cache distribuído.
+* Em ambiente com múltiplas instâncias, cada instância teria seu próprio cache.
 * A API ainda não possui rate limit.
 * A API ainda depende do ViaCEP como provedor externo.
 * `localizacao` retorna `null` nesta fase, porque o ViaCEP não fornece latitude e longitude.
@@ -270,7 +275,6 @@ GET /api/v1/ceps/{cep}/detalhes
 
 * seleção de campos na resposta;
 * autenticação por API key para consumo externo;
-* cache de consultas;
 * rate limit;
 * fallback com outro provedor, como BrasilAPI;
 * Docker;

@@ -10,9 +10,9 @@ import org.springframework.stereotype.Service;
 @Service
 public class ConsultaCepService {
 
-    private final ProvedorCep provedorCep;
+    private final CachedProvedorCep provedorCep;
 
-    public ConsultaCepService(ProvedorCep provedorCep) {
+    public ConsultaCepService(CachedProvedorCep provedorCep) {
         this.provedorCep = provedorCep;
     }
 
