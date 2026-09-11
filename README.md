@@ -243,23 +243,58 @@ Principais erros:
 | 502 | `RESPOSTA_FORNECEDOR_INVALIDA` | Provedor externo retornou resposta inválida |
 | 503 | `SERVICO_CEP_INDISPONIVEL` | Serviço externo temporariamente indisponível |
 
+## Proteção por API Key
+
+A API possui suporte a proteção por API key, pensada para consumo por sistemas externos. Por padrão, em desenvolvimento local, a proteção pode ficar desabilitada para não interferir no painel Angular.
+
+Para habilitar, defina as variáveis de ambiente:
+
+Windows (cmd):
+```cmd
+set API_KEY_HABILITADA=true
+set API_KEY_VALOR=sua-chave-aqui
+```
+
+Windows (PowerShell):
+```powershell
+$env:API_KEY_HABILITADA="true"
+$env:API_KEY_VALOR="sua-chave-aqui"
+```
+
+Linux/macOS:
+```bash
+export API_KEY_HABILITADA=true
+export API_KEY_VALOR=sua-chave-aqui
+```
+
+Quando habilitada, as requisições aos endpoints `/api/v1/**` passam a exigir o header `X-API-Key`.
+Requisições sem o header correto retornarão `401 Unauthorized`.
+
+Exemplo com curl:
+```bash
+curl -H "X-API-Key: sua-chave-aqui" http://localhost:8080/api/v1/ceps/01001000
+```
+
+> **Aviso de Segurança**: Nunca versione chaves reais no repositório. Configure sempre via variáveis de ambiente em produção. Esta é uma proteção simples e não substitui autenticação completa para usuários.
+
 ## Uso em outros sistemas
 
-Para integrações com outros sistemas, como telas de cadastro de usuários, clientes, fornecedores ou pacientes, recomenda-se utilizar inicialmente o endpoint básico:
+Para integrações com outros sistemas, como telas de cadastro de usuários, clientes, fornecedores ou pacientes, recomenda-se utilizar inicialmente o endpoint básico (lembrando de passar o header `X-API-Key` se a proteção estiver habilitada):
 
 ```http
 GET /api/v1/ceps/{cep}
+X-API-Key: sua-chave-aqui
 ```
 
 Esse endpoint retorna apenas os dados principais necessários para preenchimento automático de endereço. Quando forem necessários dados complementares, utilize o endpoint detalhado:
 
 ```http
 GET /api/v1/ceps/{cep}/detalhes
+X-API-Key: sua-chave-aqui
 ```
 
 ## Limitações atuais
 
-* A API ainda não possui autenticação.
 * A API usa cache em memória para consultas bem-sucedidas.
 * O cache reduz chamadas repetidas ao ViaCEP.
 * O cache é local à instância da aplicação.
@@ -274,7 +309,6 @@ GET /api/v1/ceps/{cep}/detalhes
 ## Próximas evoluções planejadas
 
 * seleção de campos na resposta;
-* autenticação por API key para consumo externo;
 * rate limit;
 * fallback com outro provedor, como BrasilAPI;
 * Docker;

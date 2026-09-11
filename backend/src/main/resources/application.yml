@@ -8,6 +8,9 @@ integracoes:
     timeout-leitura: 5s
 
 aplicacao:
+  api-key:
+    habilitada: ${API_KEY_HABILITADA:false}
+    valor: ${API_KEY_VALOR:}
   cors:
     origens-permitidas: http://localhost:4200
 
