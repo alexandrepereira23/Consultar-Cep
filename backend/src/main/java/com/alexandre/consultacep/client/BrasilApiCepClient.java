@@ -4,6 +4,7 @@ import com.alexandre.consultacep.domain.Endereco;
 import com.alexandre.consultacep.exception.CepNaoEncontradoException;
 import com.alexandre.consultacep.exception.RespostaInvalidaException;
 import com.alexandre.consultacep.exception.ServicoIndisponivelException;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
@@ -12,35 +13,35 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
 @Component
-public class ViaCepClient implements ProvedorCep {
+public class BrasilApiCepClient implements ProvedorCep {
 
     private static final String CEP_COM_MASCARA = "\\d{5}-\\d{3}";
+    private static final String CEP_SEM_MASCARA = "\\d{8}";
 
     private final RestClient restClient;
 
-    public ViaCepClient(@org.springframework.beans.factory.annotation.Qualifier("viaCepRestClient") RestClient restClient) {
+    public BrasilApiCepClient(@Qualifier("brasilApiRestClient") RestClient restClient) {
         this.restClient = restClient;
     }
 
     @Override
     public Endereco consultar(String cep) {
         try {
-            ViaCepResponse response = restClient.get()
-                    .uri("/{cep}/json/", cep)
+            BrasilApiResponse response = restClient.get()
+                    .uri("/{cep}", cep)
                     .retrieve()
                     .onStatus(HttpStatusCode::isError, (req, res) -> {
+                        if (res.getStatusCode() == HttpStatus.NOT_FOUND) {
+                            throw new CepNaoEncontradoException("Fornecedor indicou CEP inexistente: " + cep + ".");
+                        }
                         if (res.getStatusCode() == HttpStatus.BAD_REQUEST) {
                             throw new RespostaInvalidaException("Fornecedor retornou status 400 para a consulta de CEP.");
                         }
                         throw new ServicoIndisponivelException("Fornecedor retornou status " + res.getStatusCode() + ".");
                     })
-                    .body(ViaCepResponse.class);
+                    .body(BrasilApiResponse.class);
 
             validarResposta(response);
-
-            if (Boolean.TRUE.equals(response.erro())) {
-                throw new CepNaoEncontradoException("Fornecedor indicou CEP inexistente: " + cep + ".");
-            }
 
             return converterParaDominio(response);
 
@@ -53,40 +54,42 @@ public class ViaCepClient implements ProvedorCep {
         }
     }
 
-    private void validarResposta(ViaCepResponse viaCep) {
-        if (viaCep == null) {
+    private void validarResposta(BrasilApiResponse response) {
+        if (response == null) {
             throw new RespostaInvalidaException("Fornecedor retornou resposta nula.");
         }
-        if (Boolean.TRUE.equals(viaCep.erro())) {
-            return;
-        }
-        if (viaCep.cep() == null || !viaCep.cep().matches(CEP_COM_MASCARA)) {
+        if (response.cep() == null || (!response.cep().matches(CEP_COM_MASCARA) && !response.cep().matches(CEP_SEM_MASCARA))) {
             throw new RespostaInvalidaException("Fornecedor retornou CEP ausente ou inválido.");
         }
-        if (viaCep.localidade() == null || viaCep.localidade().isBlank()) {
+        if (response.city() == null || response.city().isBlank()) {
             throw new RespostaInvalidaException("Fornecedor retornou cidade ausente.");
         }
-        if (viaCep.uf() == null || viaCep.uf().isBlank() || viaCep.uf().length() != 2) {
+        if (response.state() == null || response.state().isBlank() || response.state().length() != 2) {
             throw new RespostaInvalidaException("Fornecedor retornou UF ausente ou inválida.");
         }
     }
 
-    private Endereco converterParaDominio(ViaCepResponse viaCep) {
+    private Endereco converterParaDominio(BrasilApiResponse response) {
+        String cepFormatado = response.cep();
+        if (cepFormatado != null && cepFormatado.matches(CEP_SEM_MASCARA)) {
+            cepFormatado = cepFormatado.substring(0, 5) + "-" + cepFormatado.substring(5);
+        }
+
         return new Endereco(
-                viaCep.cep(),
-                viaCep.logradouro() != null ? viaCep.logradouro() : "",
-                viaCep.complemento() != null ? viaCep.complemento() : "",
-                viaCep.unidade() != null ? viaCep.unidade() : "",
-                viaCep.bairro() != null ? viaCep.bairro() : "",
-                viaCep.localidade() != null ? viaCep.localidade() : "",
-                viaCep.uf() != null ? viaCep.uf() : "",
-                viaCep.estado() != null ? viaCep.estado() : "",
-                viaCep.regiao() != null ? viaCep.regiao() : "",
-                viaCep.ibge() != null ? viaCep.ibge() : "",
-                viaCep.ddd() != null ? viaCep.ddd() : "",
-                viaCep.siafi() != null ? viaCep.siafi() : "",
-                viaCep.gia() != null ? viaCep.gia() : "",
-                "VIACEP"
+                cepFormatado,
+                response.street() != null ? response.street() : "",
+                "", 
+                "", 
+                response.neighborhood() != null ? response.neighborhood() : "",
+                response.city() != null ? response.city() : "",
+                response.state() != null ? response.state() : "",
+                "", 
+                "", 
+                "", 
+                "", 
+                "", 
+                "", 
+                "BRASILAPI"
         );
     }
 }

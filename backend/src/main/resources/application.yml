@@ -6,6 +6,10 @@ integracoes:
     url-base: ${VIACEP_URL_BASE:https://viacep.com.br/ws}
     timeout-conexao: 3s
     timeout-leitura: 5s
+  brasilapi:
+    url-base: ${BRASILAPI_URL_BASE:https://brasilapi.com.br/api/cep/v2}
+    timeout-conexao: 3s
+    timeout-leitura: 5s
 
 aplicacao:
   api-key:

@@ -28,4 +28,18 @@ public class AppConfig {
                 .requestFactory(factory)
                 .build();
     }
+
+    @Bean
+    public RestClient brasilApiRestClient(
+            @Value("${integracoes.brasilapi.url-base}") String urlBase,
+            @Value("${integracoes.brasilapi.timeout-conexao}") Duration timeoutConexao,
+            @Value("${integracoes.brasilapi.timeout-leitura}") Duration timeoutLeitura) {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout((int) timeoutConexao.toMillis());
+        factory.setReadTimeout((int) timeoutLeitura.toMillis());
+        return RestClient.builder()
+                .baseUrl(urlBase)
+                .requestFactory(factory)
+                .build();
+    }
 }

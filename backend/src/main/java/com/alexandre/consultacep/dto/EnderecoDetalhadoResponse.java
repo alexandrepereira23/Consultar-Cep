@@ -46,7 +46,7 @@ public record EnderecoDetalhadoResponse(
     @Schema(description = "Coordenadas geográficas. Nesta fase permanece nulo porque o ViaCEP não fornece latitude e longitude.", nullable = true)
     LocalizacaoResponse localizacao,
 
-    @Schema(description = "Fonte interna usada para montar os dados.", example = "VIACEP")
+    @Schema(description = "Fonte interna usada para montar os dados. Pode ser VIACEP ou BRASILAPI.", example = "VIACEP")
     String fonte
 ) {
 }

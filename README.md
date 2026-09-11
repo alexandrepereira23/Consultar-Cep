@@ -347,14 +347,16 @@ X-API-Key: sua-chave-aqui
 * Ainda não há Redis ou cache distribuído.
 * Em ambiente com múltiplas instâncias, cada instância teria seu próprio cache e rate limit.
 * Rate limit é em memória e não distribuído, portanto, contadores são perdidos no reinício da aplicação.
-* A API ainda depende do ViaCEP como provedor externo.
-* `localizacao` retorna `null` nesta fase, porque o ViaCEP não fornece latitude e longitude.
+* A API utiliza o ViaCEP como provedor principal de CEPs.
+* A BrasilAPI é utilizada como fallback automático caso o ViaCEP apresente falhas (indisponibilidade, timeout, resposta inválida).
+* Em caso de CEP inexistente, o fallback não é acionado (retorna 404 imediato).
+* A fonte dos dados pode ser identificada no campo `fonte` da resposta detalhada (`VIACEP` ou `BRASILAPI`).
+* `localizacao` retorna `null` nesta fase, pois os dados de localização não são padronizados ou fornecidos pelo ViaCEP.
 * O projeto ainda está preparado para execução local.
 
 ## Próximas evoluções planejadas
 
 * seleção de campos na resposta;
-* fallback com outro provedor, como BrasilAPI;
 * rate limit distribuído com Redis;
 * métricas/observabilidade;
 * gerenciamento de múltiplas API keys;
