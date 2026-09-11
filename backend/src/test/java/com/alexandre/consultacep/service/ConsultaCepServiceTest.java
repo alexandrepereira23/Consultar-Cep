@@ -1,6 +1,6 @@
 package com.alexandre.consultacep.service;
 
-import com.alexandre.consultacep.client.ProvedorCep;
+
 import com.alexandre.consultacep.domain.Endereco;
 import com.alexandre.consultacep.dto.EnderecoBasicoResponse;
 import com.alexandre.consultacep.dto.EnderecoDetalhadoResponse;
@@ -56,7 +56,6 @@ class ConsultaCepServiceTest {
         assertEquals("01001-000", response.cep());
         assertEquals("São Paulo", response.estado());
         assertNull(response.localizacao());
-        assertNotEquals("", response.localizacao());
         assertEquals("VIACEP", response.fonte());
         verify(provedorCep, times(1)).consultar("01001000");
     }
