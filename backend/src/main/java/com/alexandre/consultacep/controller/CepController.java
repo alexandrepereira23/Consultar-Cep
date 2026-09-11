@@ -139,4 +139,31 @@ public class CepController {
             @PathVariable String cep) {
         return ResponseEntity.ok(service.consultarDetalhado(cep));
     }
+
+    @GetMapping("/{cep}/campos")
+    @Operation(summary = "Busca de endereço por CEP com campos selecionados",
+               description = "Retorna os dados de um endereço contendo apenas os campos especificados. Formatos aceitos: 00000000 e 00000-000.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Endereço encontrado e campos filtrados.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, examples = @ExampleObject(name = "Resposta com campos selecionados", value = """
+                    {
+                      "cep": "01001-000",
+                      "logradouro": "Praça da Sé",
+                      "bairro": "Sé",
+                      "cidade": "São Paulo",
+                      "uf": "SP"
+                    }
+                    """))),
+            @ApiResponse(responseCode = "400", description = "CEP inválido ou campos inválidos/vazios.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErroResposta.class), examples = @ExampleObject(name = "CEP inválido", value = ERRO_CEP_INVALIDO))),
+            @ApiResponse(responseCode = "404", description = "CEP não encontrado.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErroResposta.class), examples = @ExampleObject(name = "CEP não encontrado", value = ERRO_CEP_NAO_ENCONTRADO))),
+            @ApiResponse(responseCode = "502", description = "Resposta inválida do serviço de consulta de CEP.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErroResposta.class), examples = @ExampleObject(name = "Resposta inválida do fornecedor", value = ERRO_RESPOSTA_FORNECEDOR_INVALIDA))),
+            @ApiResponse(responseCode = "503", description = "Serviço de consulta de CEP temporariamente indisponível.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErroResposta.class), examples = @ExampleObject(name = "Serviço de CEP indisponível", value = ERRO_SERVICO_CEP_INDISPONIVEL))),
+            @ApiResponse(responseCode = "500", description = "Erro interno inesperado.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErroResposta.class), examples = @ExampleObject(name = "Erro interno", value = ERRO_INTERNO)))
+    })
+    public ResponseEntity<java.util.Map<String, Object>> consultarCampos(
+            @Parameter(description = "CEP a ser consultado. Exemplos: 01001000 ou 01001-000.", example = "01001-000")
+            @PathVariable String cep,
+            @Parameter(description = "Lista de campos separados por vírgula que devem ser retornados.", example = "cep,logradouro,bairro,cidade,uf")
+            @org.springframework.web.bind.annotation.RequestParam String campos) {
+        return ResponseEntity.ok(service.consultarCampos(cep, campos));
+    }
 }

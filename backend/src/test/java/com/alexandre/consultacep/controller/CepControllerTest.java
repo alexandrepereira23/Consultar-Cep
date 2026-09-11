@@ -180,6 +180,50 @@ class CepControllerTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    void deveRetornar200ComCamposSelecionados() throws Exception {
+        var mapa = new java.util.LinkedHashMap<String, Object>();
+        mapa.put("cep", "01001-000");
+        mapa.put("cidade", "São Paulo");
+        when(service.consultarCampos("01001000", "cep,cidade")).thenReturn(mapa);
+
+        mockMvc.perform(get("/api/v1/ceps/01001000/campos?campos=cep,cidade"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.cep").value("01001-000"))
+                .andExpect(jsonPath("$.cidade").value("São Paulo"))
+                .andExpect(jsonPath("$.logradouro").doesNotExist());
+    }
+
+    @Test
+    void deveRetornar400QuandoParametroCamposAusente() throws Exception {
+        mockMvc.perform(get("/api/v1/ceps/01001000/campos"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void deveRetornar400QuandoCampoForInvalido() throws Exception {
+        when(service.consultarCampos("01001000", "invalido"))
+                .thenThrow(new com.alexandre.consultacep.exception.CamposInvalidosException("Campo inválido solicitado: invalido."));
+
+        mockMvc.perform(get("/api/v1/ceps/01001000/campos?campos=invalido"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro").value("CAMPOS_INVALIDOS"))
+                .andExpect(jsonPath("$.mensagem").value("Campo inválido solicitado: invalido."));
+    }
+
+    @Test
+    void deveRetornarErrosPadronizadosNoEndpointCamposQuandoCepForInvalido() throws Exception {
+        when(service.consultarCampos("123", "cep")).thenThrow(new CepInvalidoException("CEP inválido"));
+        when(service.consultarCampos("99999999", "cep")).thenThrow(new CepNaoEncontradoException("CEP não encontrado"));
+
+        mockMvc.perform(get("/api/v1/ceps/123/campos?campos=cep"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro").value("CEP_INVALIDO"));
+        mockMvc.perform(get("/api/v1/ceps/99999999/campos?campos=cep"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.erro").value("CEP_NAO_ENCONTRADO"));
+    }
+
     private EnderecoBasicoResponse respostaBasica() {
         return new EnderecoBasicoResponse("01001-000", "Praça da Sé", "Sé", "São Paulo", "SP");
     }

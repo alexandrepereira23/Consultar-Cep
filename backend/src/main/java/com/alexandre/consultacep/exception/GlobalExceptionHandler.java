@@ -15,6 +15,19 @@ public class GlobalExceptionHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    @ExceptionHandler(CamposInvalidosException.class)
+    public ResponseEntity<ErroResposta> handleCamposInvalidos(CamposInvalidosException ex, HttpServletRequest request) {
+        logger.warn("Campos inválidos: {}", ex.getMessage());
+        ErroResposta erro = new ErroResposta(
+            HttpStatus.BAD_REQUEST.value(),
+            "CAMPOS_INVALIDOS",
+            ex.getMessage(),
+            request.getRequestURI(),
+            Instant.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(erro);
+    }
+
     @ExceptionHandler(CepInvalidoException.class)
     public ResponseEntity<ErroResposta> handleCepInvalido(CepInvalidoException ex, HttpServletRequest request) {
         logger.warn("CEP inválido: {}", ex.getMessage());
@@ -65,6 +78,19 @@ public class GlobalExceptionHandler {
             Instant.now()
         );
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(erro);
+    }
+
+    @ExceptionHandler(org.springframework.web.bind.MissingServletRequestParameterException.class)
+    public ResponseEntity<ErroResposta> handleMissingParams(org.springframework.web.bind.MissingServletRequestParameterException ex, HttpServletRequest request) {
+        logger.warn("Parâmetro ausente: {}", ex.getParameterName());
+        ErroResposta erro = new ErroResposta(
+            HttpStatus.BAD_REQUEST.value(),
+            "PARAMETRO_AUSENTE",
+            "O parâmetro obrigatório '" + ex.getParameterName() + "' não foi informado.",
+            request.getRequestURI(),
+            Instant.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(erro);
     }
 
     @ExceptionHandler(Exception.class)

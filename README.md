@@ -213,6 +213,32 @@ Exemplo de resposta:
 }
 ```
 
+### Endpoint com campos selecionados
+
+```http
+GET /api/v1/ceps/{cep}/campos?campos=cep,logradouro,bairro,cidade,uf
+```
+
+Uso recomendado:
+* Sistemas que precisam preencher cadastro de usuários, clientes, fornecedores etc., recebendo apenas os campos necessários.
+* Redução de payload da resposta para clientes específicos.
+
+O parâmetro `campos` é obrigatório. Aceita os mesmos campos presentes no endpoint detalhado, separados por vírgula. Se for solicitado um campo inexistente ou a lista for vazia, a API retorna erro 400.
+
+Exemplo de requisição:
+```http
+GET http://localhost:8080/api/v1/ceps/01001000/campos?campos=cep,cidade,uf
+```
+
+Exemplo de resposta:
+```json
+{
+  "cep": "01001-000",
+  "cidade": "São Paulo",
+  "uf": "SP"
+}
+```
+
 ## Formatos de CEP aceitos
 
 * `01001000`

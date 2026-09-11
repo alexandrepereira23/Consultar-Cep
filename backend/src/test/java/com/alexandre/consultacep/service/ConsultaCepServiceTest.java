@@ -113,6 +113,78 @@ class ConsultaCepServiceTest {
         verify(provedorCep).consultar("01001000");
     }
 
+    @Test
+    void deveRetornarApenasCamposSolicitadosEPreservarOrdem() {
+        when(provedorCep.consultar("01001000")).thenReturn(enderecoPadrao());
+        var resultado = consultaCepService.consultarCampos("01001000", "uf,cidade,cep");
+        
+        assertNotNull(resultado);
+        assertEquals(3, resultado.size());
+        
+        var iterador = resultado.keySet().iterator();
+        assertEquals("uf", iterador.next());
+        assertEquals("cidade", iterador.next());
+        assertEquals("cep", iterador.next());
+        
+        assertEquals("SP", resultado.get("uf"));
+        assertEquals("São Paulo", resultado.get("cidade"));
+        assertEquals("01001-000", resultado.get("cep"));
+    }
+
+    @Test
+    void deveRemoverCamposDuplicados() {
+        when(provedorCep.consultar("01001000")).thenReturn(enderecoPadrao());
+        var resultado = consultaCepService.consultarCampos("01001000", "cep,cep,cidade");
+        
+        assertEquals(2, resultado.size());
+        assertTrue(resultado.containsKey("cep"));
+        assertTrue(resultado.containsKey("cidade"));
+    }
+
+    @Test
+    void deveAceitarEspacosNosCampos() {
+        when(provedorCep.consultar("01001000")).thenReturn(enderecoPadrao());
+        var resultado = consultaCepService.consultarCampos("01001000", " cep , logradouro,  cidade ");
+        
+        assertEquals(3, resultado.size());
+        assertTrue(resultado.containsKey("cep"));
+        assertTrue(resultado.containsKey("logradouro"));
+        assertTrue(resultado.containsKey("cidade"));
+    }
+
+    @Test
+    void deveLancarExcecaoParaCampoInvalido() {
+        com.alexandre.consultacep.exception.CamposInvalidosException ex = assertThrows(
+            com.alexandre.consultacep.exception.CamposInvalidosException.class, 
+            () -> consultaCepService.consultarCampos("01001000", "cep,nomeRua,uf")
+        );
+        assertTrue(ex.getMessage().contains("Campo inválido solicitado: nomeRua."));
+    }
+
+    @Test
+    void deveLancarExcecaoParaListaVazia() {
+        assertThrows(
+            com.alexandre.consultacep.exception.CamposInvalidosException.class, 
+            () -> consultaCepService.consultarCampos("01001000", "")
+        );
+        assertThrows(
+            com.alexandre.consultacep.exception.CamposInvalidosException.class, 
+            () -> consultaCepService.consultarCampos("01001000", "   ")
+        );
+        assertThrows(
+            com.alexandre.consultacep.exception.CamposInvalidosException.class, 
+            () -> consultaCepService.consultarCampos("01001000", ",,,")
+        );
+    }
+
+    @Test
+    void deveManterValidacaoDeCepParaConsultaCampos() {
+        assertThrows(
+            CepInvalidoException.class, 
+            () -> consultaCepService.consultarCampos("123", "cep")
+        );
+    }
+
     private Endereco enderecoPadrao() {
         return new Endereco("01001-000", "Praça da Sé", "lado ímpar", "", "Sé", "São Paulo", "SP", "São Paulo", "Sudeste", "3550308", "11", "7107", "1004", "VIACEP");
     }
