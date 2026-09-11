@@ -382,7 +382,6 @@ X-API-Key: sua-chave-aqui
 
 ## Próximas evoluções planejadas
 
-* seleção de campos na resposta;
 * rate limit distribuído com Redis;
 * métricas/observabilidade;
 * gerenciamento de múltiplas API keys;
