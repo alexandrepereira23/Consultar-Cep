@@ -1,0 +1,16 @@
+aplicacao:
+  api-key:
+    habilitada: true
+    valor: ${API_KEY_VALOR}
+  rate-limit:
+    habilitado: true
+    requisicoes: ${RATE_LIMIT_REQUISICOES:60}
+    janela: ${RATE_LIMIT_JANELA:1m}
+  cors:
+    origens-permitidas: ${CORS_ORIGENS_PERMITIDAS}
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

@@ -46,7 +46,7 @@ public class ApiKeyFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
-        if (!path.startsWith("/api/v1/")) {
+        if (!deveExigirApiKey(path)) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -58,6 +58,10 @@ public class ApiKeyFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private boolean deveExigirApiKey(String path) {
+        return path != null && (path.equals("/api/v1/ceps") || path.startsWith("/api/v1/ceps/"));
     }
 
     private void enviarRespostaErro(HttpServletResponse response, String path) throws IOException {

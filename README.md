@@ -5,167 +5,197 @@ Uma aplicação para consulta de CEP com painel web em Angular e API própria em
 O fluxo de dados da aplicação funciona da seguinte maneira:
 
 ```txt
-Frontend Angular -> API Spring Boot -> ViaCEP -> BrasilAPI como fallback
+Painel Web (Angular / Vercel) -> Endpoints do Painel (/api/v1/painel/**) -> API Spring Boot -> ViaCEP -> BrasilAPI (fallback)
+Sistemas Externos / Backends  -> Endpoints de Integração (/api/v1/ceps/**) [com X-API-Key] -> API Spring Boot -> ViaCEP -> BrasilAPI (fallback)
 ```
 
 ## Funcionalidades atuais
 
-* Consulta de CEP pelo painel web.
-* Preenchimento dos dados principais do endereço.
-* Exibição de informações detalhadas.
-* API REST própria para consulta de CEP.
-* Endpoint básico para consumo por outros sistemas.
-* Endpoint detalhado para painel e consultas completas.
+* Consulta de CEP pelo painel web (com dados básicos e completos).
+* Endpoints dedicados para o painel web (`/api/v1/painel/**`) sem necessidade de API key.
+* Endpoints dedicados para integração com outros sistemas (`/api/v1/ceps/**`) protegidos por API key em produção.
+* Preenchimento automático e edição dos campos de endereço no frontend.
+* Fallback transparente: ViaCEP como provedor principal e BrasilAPI como fallback.
+* Cache em memória com Caffeine.
+* Rate limit em memória configurável (por API Key ou por IP).
+* Suporte a perfis de ambiente (`local` e `prod`) com configuração flexível e desacoplada de nuvem.
+* CORS configurável para origens únicas ou múltiplas.
 * Tratamento padronizado de erros.
-* Documentação Swagger/OpenAPI.
+* Documentação Swagger/OpenAPI (habilitada em desenvolvimento).
 
 ## Arquitetura do projeto
 
-O projeto está estruturado em um formato monorepo com as seguintes partes:
+O projeto está estruturado em monorepo com as seguintes partes:
 
 ```txt
 frontend/   Aplicação Angular
 backend/    API Spring Boot
 ```
 
-Responsabilidades:
-* Angular: interface visual.
-* Spring Boot: API intermediária, validação, padronização da resposta e comunicação com provedor externo.
-* ViaCEP: provedor externo usado pela API, não diretamente pelo frontend.
+### Separação de acessos
+
+1. **Painel Web (Angular):**
+   * Destinado ao uso humano via navegador/celular.
+   * Consome os endpoints próprios do painel:
+     * `GET /api/v1/painel/ceps/{cep}`
+     * `GET /api/v1/painel/ceps/{cep}/detalhes`
+   * **Não utiliza `X-API-Key`**, garantindo que nenhuma chave secreta fique exposta no bundle público do frontend.
+   * Protegido por Rate Limit (por IP) e CORS restrito ao domínio do frontend.
+
+2. **API de Integração (Sistemas externos):**
+   * Destinada a integrações de backend-para-backend (ex.: Voll.med, microsserviços, automações).
+   * Consome os endpoints de integração:
+     * `GET /api/v1/ceps/{cep}`
+     * `GET /api/v1/ceps/{cep}/detalhes`
+     * `GET /api/v1/ceps/{cep}/campos?campos=cep,cidade,uf`
+   * Em produção, exige o envio do header `X-API-Key`.
+   * Protegida por Rate Limit (por API key ou IP).
 
 ## Tecnologias utilizadas
 
 **Frontend:**
-* Angular
+* Angular 21
 * TypeScript
 * RxJS
 * Vitest
 
 **Backend:**
-* Java
-* Spring Boot
-* Spring Web
-* Springdoc/OpenAPI
+* Java 21+
+* Spring Boot 4
+* Spring Web MVC
+* Springdoc / OpenAPI
+* Caffeine Cache
+* Bucket4j (Rate Limiting)
 * Maven
 
-## Como executar o backend
+---
 
-### Pré-requisitos
-* JDK compatível com o projeto.
-* Maven Wrapper incluso no projeto.
+## Ambientes e Configuração
 
-### Windows
+O projeto foi projetado utilizando variáveis de ambiente genéricas, permitindo deploy inicial no **Railway** (backend) e na **Vercel** (frontend), além de suportar migração futura para infraestrutura própria (Docker, VM, Kubernetes) sem acoplamento a provedores específicos.
+
+### Arquivo `.env.example`
+
+Na raiz do projeto encontra-se o arquivo `.env.example` com o modelo de variáveis de ambiente:
+
+```env
+# Backend - Spring Boot
+SPRING_PROFILES_ACTIVE=prod
+PORT=8080
+
+API_KEY_VALOR=troque-por-uma-chave-forte
+RATE_LIMIT_REQUISICOES=60
+RATE_LIMIT_JANELA=1m
+CORS_ORIGENS_PERMITIDAS=https://seu-frontend.vercel.app
+
+VIACEP_URL_BASE=https://viacep.com.br/ws
+BRASILAPI_URL_BASE=https://brasilapi.com.br/api/cep/v2
+
+# Frontend - Angular/Vercel
+API_BASE_URL=https://seu-backend.railway.app
+```
+
+> **Atenção de Segurança**: Nunca comite chaves ou segredos reais no repositório. Nunca coloque `API_KEY_VALOR` no código ou variáveis públicas do frontend Angular.
+
+### Perfis de Ambiente do Backend
+
+* `application.yml`: Configurações comuns (porta `${PORT:8080}`, timeouts, integrações e cache). O perfil padrão é definido como `local` quando nenhum perfil é explicitamente informado.
+* `application-local.yml`: Perfil voltado ao desenvolvimento local:
+  * API Key desabilitada (`aplicacao.api-key.habilitada=false`).
+  * Rate limit relaxado (120 req/min).
+  * CORS liberado para `http://localhost:4200`.
+  * Swagger/OpenAPI habilitado.
+* `application-prod.yml`: Perfil voltado para produção (Railway ou servidor próprio):
+  * API Key habilitada obrigatoriamente (`aplicacao.api-key.habilitada=true`, `valor: ${API_KEY_VALOR}`).
+  * CORS obrigatório (`aplicacao.cors.origens-permitidas: ${CORS_ORIGENS_PERMITIDAS}`). Suporta uma origem ou múltiplas separadas por vírgula (ex.: `https://meu-app.vercel.app,https://outro-dominio.com`).
+  * Rate limit padrão de 60 req/min configurável por `RATE_LIMIT_REQUISICOES` e `RATE_LIMIT_JANELA`.
+  * Swagger UI e `/v3/api-docs` desabilitados para proteção de endpoints em produção.
+
+---
+
+## Como executar o projeto
+
+### Backend
+
+#### Pré-requisitos
+* JDK 21+ instalado.
+* Maven Wrapper incluso no repositório.
+
+#### Executando localmente (Perfil `local`)
+
+Windows:
 ```cmd
 cd backend
-mvnw.cmd spring-boot:run
+mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
-### Linux/macOS
+Linux/macOS:
 ```bash
 cd backend
-./mvnw spring-boot:run
+./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
-Por padrão, a API roda em:
+Por padrão, a API estará acessível em:
 ```txt
 http://localhost:8080
 ```
 
-## Como executar o frontend
+#### Executando em Produção (Railway ou Servidor Próprio)
 
-### Pré-requisitos
+Defina as variáveis no painel da sua plataforma de hospedagem:
+
+* `SPRING_PROFILES_ACTIVE`: `prod`
+* `PORT`: atribuído automaticamente pelo Railway ou definido manualmente (ex.: `8080`).
+* `API_KEY_VALOR`: chave secreta forte para proteger endpoints de integração.
+* `CORS_ORIGENS_PERMITIDAS`: URL do frontend (ex.: `https://seu-frontend.vercel.app` ou múltiplas separadas por vírgula).
+* `RATE_LIMIT_REQUISICOES`: limite de requisições (ex.: `60`).
+* `RATE_LIMIT_JANELA`: janela de tempo do rate limit (ex.: `1m`).
+* `VIACEP_URL_BASE` (opcional): padrão `https://viacep.com.br/ws`.
+* `BRASILAPI_URL_BASE` (opcional): padrão `https://brasilapi.com.br/api/cep/v2`.
+
+---
+
+### Frontend
+
+#### Pré-requisitos
 * Node.js compatível com Angular 21.
 * npm.
 
-### Comandos
-```cmd
+#### Executando localmente
+
+```bash
 cd frontend
-npm ci
+npm install
 npm start
 ```
 
-Por padrão, o Angular roda em:
+O frontend estará disponível em:
 ```txt
 http://localhost:4200
 ```
 
-O frontend espera a API em:
-```txt
-http://localhost:8080/api/v1
-```
+#### Configuração da URL da API no Frontend
 
-## Configuração da URL da API no frontend
-
-A configuração da URL da API fica localizada em:
+O frontend consome a API através da propriedade `apiBaseUrl` definida em:
 ```txt
 frontend/src/environments/environment.ts
 ```
 
-Em ambiente local, o valor atual aponta para:
-```txt
-http://localhost:8080/api/v1
-```
+* Em desenvolvimento local aponta para: `http://localhost:8080/api/v1`
+* Para publicação na Vercel ou outro servidor web, atualize o valor de `apiBaseUrl` com o domínio da sua API (ex.: `https://seu-backend.railway.app/api/v1`).
 
-## Como testar
-
-### Frontend
-
-Windows:
-```cmd
-cd frontend
-npm ci
-set NG_CLI_ANALYTICS=false
-set CI=true
-npm test -- --watch=false
-npm run build
-```
-
-Linux/macOS:
-```bash
-cd frontend
-npm ci
-NG_CLI_ANALYTICS=false CI=true npm test -- --watch=false
-NG_CLI_ANALYTICS=false CI=true npm run build
-```
-
-### Backend
-
-Windows:
-```cmd
-cd backend
-mvnw.cmd test
-```
-
-Linux/macOS:
-```bash
-cd backend
-./mvnw test
-```
-
-## Documentação Swagger/OpenAPI
-
-Quando o backend estiver rodando, acesse:
-```txt
-http://localhost:8080/swagger-ui.html
-```
+---
 
 ## Endpoints da API
 
-### Endpoint básico
+### Endpoints do Painel Web (Sem API Key)
 
+Dedicados para consumo da interface web / mobile, protegidos por rate limit e CORS restrito:
+
+#### 1. Consulta básica do painel
 ```http
-GET /api/v1/ceps/{cep}
+GET /api/v1/painel/ceps/{cep}
 ```
-
-Uso recomendado:
-* Sistemas externos que precisam apenas dos dados principais do endereço.
-* Exemplos: cadastro de usuários, clientes, fornecedores, pacientes etc.
-
-Exemplo de requisição:
-```http
-GET http://localhost:8080/api/v1/ceps/01001000
-```
-
 Exemplo de resposta:
 ```json
 {
@@ -177,21 +207,10 @@ Exemplo de resposta:
 }
 ```
 
-### Endpoint detalhado
-
+#### 2. Consulta detalhada do painel
 ```http
-GET /api/v1/ceps/{cep}/detalhes
+GET /api/v1/painel/ceps/{cep}/detalhes
 ```
-
-Uso recomendado:
-* Painel Angular.
-* Consultas que precisam de dados complementares.
-
-Exemplo de requisição:
-```http
-GET http://localhost:8080/api/v1/ceps/01001000/detalhes
-```
-
 Exemplo de resposta:
 ```json
 {
@@ -213,23 +232,29 @@ Exemplo de resposta:
 }
 ```
 
-### Endpoint com campos selecionados
+---
 
+### Endpoints de Integração (Protegidos por API Key em produção)
+
+Dedicados para integração com outros sistemas de backend. Em ambiente de produção, exigem o cabeçalho `X-API-Key`:
+
+#### 1. Consulta básica
 ```http
-GET /api/v1/ceps/{cep}/campos?campos=cep,logradouro,bairro,cidade,uf
+GET /api/v1/ceps/{cep}
+X-API-Key: sua-chave-aqui
 ```
 
-Uso recomendado:
-* Sistemas que precisam preencher cadastro de usuários, clientes, fornecedores etc., recebendo apenas os campos necessários.
-* Redução de payload da resposta para clientes específicos.
-
-O parâmetro `campos` é obrigatório. Aceita os mesmos campos presentes no endpoint detalhado, separados por vírgula. Se for solicitado um campo inexistente ou a lista for vazia, a API retorna erro 400.
-
-Exemplo de requisição:
+#### 2. Consulta detalhada
 ```http
-GET http://localhost:8080/api/v1/ceps/01001000/campos?campos=cep,cidade,uf
+GET /api/v1/ceps/{cep}/detalhes
+X-API-Key: sua-chave-aqui
 ```
 
+#### 3. Consulta com campos selecionados
+```http
+GET /api/v1/ceps/{cep}/campos?campos=cep,cidade,uf
+X-API-Key: sua-chave-aqui
+```
 Exemplo de resposta:
 ```json
 {
@@ -239,152 +264,75 @@ Exemplo de resposta:
 }
 ```
 
-## Formatos de CEP aceitos
+---
 
-* `01001000`
-* `01001-000`
+## Formatos de CEP e Erros Padronizados
 
-A API valida o CEP e retorna erro padronizado quando o formato é inválido.
+Formatos aceitos: `00000000` e `00000-000`.
 
-## Respostas de erro
-
-Formato padrão:
+Estrutura de resposta de erro:
 ```json
 {
-  "status": 404,
-  "erro": "CEP_NAO_ENCONTRADO",
-  "mensagem": "O CEP informado não foi encontrado.",
-  "caminho": "/api/v1/ceps/99999999",
-  "timestamp": "2026-09-09T12:00:00Z"
+  "status": 400,
+  "erro": "CEP_INVALIDO",
+  "mensagem": "O CEP informado é inválido. Use o formato 00000000 ou 00000-000.",
+  "caminho": "/api/v1/painel/ceps/123",
+  "timestamp": "2026-09-14T12:00:00Z"
 }
 ```
 
-Principais erros:
+| Status | Código | Motivo |
+|---|---|---|
+| 400 | `CEP_INVALIDO` | CEP com formato incompatível |
+| 400 | `CAMPOS_INVALIDOS` | Parâmetro de campos ausente ou contém campo inválido |
+| 401 | `API_KEY_INVALIDA` | API Key ausente ou incorreta em endpoint protegido |
+| 404 | `CEP_NAO_ENCONTRADO` | CEP inexistente |
+| 429 | `LIMITE_REQUISICOES_EXCEDIDO` | Rate limit excedido para a janela de tempo |
+| 500 | `ERRO_INTERNO` | Falha interna no servidor |
+| 502 | `RESPOSTA_FORNECEDOR_INVALIDA` | Fornecedor externo retornou resposta malformada |
+| 503 | `SERVICO_CEP_INDISPONIVEL` | Provedores externos temporariamente indisponíveis |
 
-| Status | Código | Quando ocorre |
-| --- | --- | --- |
-| 400 | `CEP_INVALIDO` | CEP em formato inválido |
-| 404 | `CEP_NAO_ENCONTRADO` | CEP não encontrado |
-| 500 | `ERRO_INTERNO` | Erro interno inesperado |
-| 502 | `RESPOSTA_FORNECEDOR_INVALIDA` | Provedor externo retornou resposta inválida |
-| 503 | `SERVICO_CEP_INDISPONIVEL` | Serviço externo temporariamente indisponível |
+---
 
-## Proteção por API Key
+## Como executar os testes
 
-A API possui suporte a proteção por API key, pensada para consumo por sistemas externos. Por padrão, em desenvolvimento local, a proteção pode ficar desabilitada para não interferir no painel Angular.
-
-Para habilitar, defina as variáveis de ambiente:
-
-Windows (cmd):
+### Backend
+Windows:
 ```cmd
-set API_KEY_HABILITADA=true
-set API_KEY_VALOR=sua-chave-aqui
-```
-
-Windows (PowerShell):
-```powershell
-$env:API_KEY_HABILITADA="true"
-$env:API_KEY_VALOR="sua-chave-aqui"
+cd backend
+mvnw.cmd test
 ```
 
 Linux/macOS:
 ```bash
-export API_KEY_HABILITADA=true
-export API_KEY_VALOR=sua-chave-aqui
+cd backend
+./mvnw test
 ```
 
-Quando habilitada, as requisições aos endpoints `/api/v1/**` passam a exigir o header `X-API-Key`.
-Requisições sem o header correto retornarão `401 Unauthorized`.
-
-Exemplo com curl:
-```bash
-curl -H "X-API-Key: sua-chave-aqui" http://localhost:8080/api/v1/ceps/01001000
-```
-
-> **Aviso de Segurança**: Nunca versione chaves reais no repositório. Configure sempre via variáveis de ambiente em produção. Esta é uma proteção simples e não substitui autenticação completa para usuários.
-
-## Proteção por Rate Limit
-
-A API possui um mecanismo simples de Rate Limit em memória, pensado para proteger os endpoints `/api/v1/**` contra excesso de requisições. 
-
-O limite é aplicado da seguinte forma:
-1. Por API Key, caso esteja habilitada e seja fornecida na requisição.
-2. Por IP da requisição, caso a API Key não seja fornecida ou esteja desabilitada.
-
-Em ambiente de desenvolvimento, o Rate Limit fica habilitado por padrão com configurações flexíveis, mas pode ser desativado.
-
-Para configurar, defina as variáveis de ambiente:
-
-Windows (cmd):
+### Frontend
+Windows:
 ```cmd
-set RATE_LIMIT_HABILITADO=true
-set RATE_LIMIT_REQUISICOES=60
-set RATE_LIMIT_JANELA=1m
-```
-
-Windows (PowerShell):
-```powershell
-$env:RATE_LIMIT_HABILITADO="true"
-$env:RATE_LIMIT_REQUISICOES="60"
-$env:RATE_LIMIT_JANELA="1m"
+cd frontend
+npm ci
+npm test -- --watch=false
+npm run build
 ```
 
 Linux/macOS:
 ```bash
-export RATE_LIMIT_HABILITADO=true
-export RATE_LIMIT_REQUISICOES=60
-export RATE_LIMIT_JANELA=1m
+cd frontend
+npm ci
+npm test -- --watch=false
+npm run build
 ```
 
-Quando o limite de requisições for excedido dentro da janela de tempo, a API retornará `429 Too Many Requests`:
+---
 
-```json
-{
-  "status": 429,
-  "erro": "LIMITE_REQUISICOES_EXCEDIDO",
-  "mensagem": "Limite de requisições excedido. Tente novamente mais tarde.",
-  "caminho": "/api/v1/ceps/01001000",
-  "timestamp": "2026-09-11T12:00:00Z"
-}
-```
+## Limitações atuais e próximas etapas
 
-## Uso em outros sistemas
-
-Para integrações com outros sistemas, como telas de cadastro de usuários, clientes, fornecedores ou pacientes, recomenda-se utilizar inicialmente o endpoint básico (lembrando de passar o header `X-API-Key` se a proteção estiver habilitada):
-
-```http
-GET /api/v1/ceps/{cep}
-X-API-Key: sua-chave-aqui
-```
-
-Esse endpoint retorna apenas os dados principais necessários para preenchimento automático de endereço. Quando forem necessários dados complementares, utilize o endpoint detalhado:
-
-```http
-GET /api/v1/ceps/{cep}/detalhes
-X-API-Key: sua-chave-aqui
-```
-
-## Limitações atuais
-
-* A API usa cache em memória para consultas bem-sucedidas.
-* O cache reduz chamadas repetidas aos provedores externos (ViaCEP e BrasilAPI).
-* O cache é local à instância da aplicação.
-* Em reinício da aplicação, o cache é perdido.
-* Ainda não há Redis ou cache distribuído.
-* Em ambiente com múltiplas instâncias, cada instância teria seu próprio cache e rate limit.
-* Rate limit é em memória e não distribuído, portanto, contadores são perdidos no reinício da aplicação.
-* A API utiliza o ViaCEP como provedor principal de CEPs.
-* A BrasilAPI é utilizada como fallback automático caso o ViaCEP apresente falhas (indisponibilidade, timeout, resposta inválida).
-* Em caso de CEP inexistente, o fallback não é acionado (retorna 404 imediato).
-* A fonte dos dados pode ser identificada no campo `fonte` da resposta detalhada (`VIACEP` ou `BRASILAPI`).
-* `localizacao` retorna `null` nesta fase, pois os dados de localização não são padronizados ou fornecidos pelo ViaCEP.
-* O projeto ainda está preparado para execução local.
-
-## Próximas evoluções planejadas
-
-* rate limit distribuído com Redis;
-* métricas/observabilidade;
-* gerenciamento de múltiplas API keys;
-* Docker;
-* deploy;
-* integração com sistemas como Voll.med.
+* Cache em memória por instância (Caffeine). Em ambiente com múltiplas instâncias, o cache é local a cada réplica.
+* Rate limit em memória gerenciado localmente via Bucket4j.
+* Próximas evoluções planejadas:
+  * Cache e Rate Limit distribuídos com Redis.
+  * Autenticação OAuth2 / JWT para múltiplos usuários / clientes.
+  * Containerização com Docker e Docker Compose.

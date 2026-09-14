@@ -1,5 +1,14 @@
 server:
-  port: 8080
+  port: ${PORT:8080}
+
+spring:
+  profiles:
+    default: local
+  cache:
+    type: caffeine
+    cache-names: enderecosPorCep
+    caffeine:
+      spec: maximumSize=10000,expireAfterWrite=24h
 
 integracoes:
   viacep:
@@ -10,21 +19,3 @@ integracoes:
     url-base: ${BRASILAPI_URL_BASE:https://brasilapi.com.br/api/cep/v2}
     timeout-conexao: 3s
     timeout-leitura: 5s
-
-aplicacao:
-  api-key:
-    habilitada: ${API_KEY_HABILITADA:false}
-    valor: ${API_KEY_VALOR:}
-  rate-limit:
-    habilitado: ${RATE_LIMIT_HABILITADO:true}
-    requisicoes: ${RATE_LIMIT_REQUISICOES:60}
-    janela: ${RATE_LIMIT_JANELA:1m}
-  cors:
-    origens-permitidas: http://localhost:4200
-
-spring:
-  cache:
-    type: caffeine
-    cache-names: enderecosPorCep
-    caffeine:
-      spec: maximumSize=10000,expireAfterWrite=24h

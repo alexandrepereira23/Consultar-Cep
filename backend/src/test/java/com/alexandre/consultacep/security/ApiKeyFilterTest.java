@@ -2,10 +2,12 @@ package com.alexandre.consultacep.security;
 
 import com.alexandre.consultacep.client.ProvedorCep;
 import com.alexandre.consultacep.domain.Endereco;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.cache.CacheManager;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -29,15 +31,48 @@ class ApiKeyFilterTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
+    private CacheManager cacheManager;
+
     @MockitoBean
     private ProvedorCep provedorCep;
 
+    private final Endereco enderecoPadrao = new Endereco(
+            "01001-000", "Praça da Sé", "lado ímpar", "", "Sé", "São Paulo", "SP", "São Paulo", "Sudeste", "3550308", "11", "7107", "1004", "VIACEP"
+    );
+
+    @BeforeEach
+    void limparCache() {
+        var cache = cacheManager.getCache("enderecosPorCep");
+        if (cache != null) {
+            cache.clear();
+        }
+    }
+
     @Test
-    void deveRetornar401QuandoApiKeyHabilitadaESemHeader() throws Exception {
+    void deveRetornar401QuandoApiKeyHabilitadaESemHeaderEmConsultaBasica() throws Exception {
         mockMvc.perform(get("/api/v1/ceps/01001000"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.erro").value("API_KEY_INVALIDA"));
-        
+
+        verifyNoInteractions(provedorCep);
+    }
+
+    @Test
+    void deveRetornar401QuandoApiKeyHabilitadaESemHeaderEmConsultaDetalhada() throws Exception {
+        mockMvc.perform(get("/api/v1/ceps/01001000/detalhes"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.erro").value("API_KEY_INVALIDA"));
+
+        verifyNoInteractions(provedorCep);
+    }
+
+    @Test
+    void deveRetornar401QuandoApiKeyHabilitadaESemHeaderEmConsultaCampos() throws Exception {
+        mockMvc.perform(get("/api/v1/ceps/01001000/campos?campos=cep,cidade"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.erro").value("API_KEY_INVALIDA"));
+
         verifyNoInteractions(provedorCep);
     }
 
@@ -47,21 +82,41 @@ class ApiKeyFilterTest {
                         .header("X-API-Key", "chave-errada"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.erro").value("API_KEY_INVALIDA"));
-        
+
         verifyNoInteractions(provedorCep);
     }
 
     @Test
-    void deveRetornar200Ou404QuandoApiKeyCorreta() throws Exception {
-        Endereco enderecoPadrao = new Endereco(
-            "01001-000", "Praça da Sé", "lado ímpar", "", "Sé", "São Paulo", "SP", "São Paulo", "Sudeste", "3550308", "11", "7107", "1004", "VIACEP"
-        );
+    void deveRetornar200QuandoApiKeyCorreta() throws Exception {
         when(provedorCep.consultar("01001000")).thenReturn(enderecoPadrao);
 
         mockMvc.perform(get("/api/v1/ceps/01001000")
                         .header("X-API-Key", "teste-chave-123"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.cep").value("01001-000"));
+
+        verify(provedorCep).consultar("01001000");
+    }
+
+    @Test
+    void devePermitirAcessoSemApiKeyNoPainelBasicoMesmoComApiKeyHabilitada() throws Exception {
+        when(provedorCep.consultar("01001000")).thenReturn(enderecoPadrao);
+
+        mockMvc.perform(get("/api/v1/painel/ceps/01001000"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.cep").value("01001-000"));
+
+        verify(provedorCep).consultar("01001000");
+    }
+
+    @Test
+    void devePermitirAcessoSemApiKeyNoPainelDetalhadoMesmoComApiKeyHabilitada() throws Exception {
+        when(provedorCep.consultar("01001000")).thenReturn(enderecoPadrao);
+
+        mockMvc.perform(get("/api/v1/painel/ceps/01001000/detalhes"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.cep").value("01001-000"))
+                .andExpect(jsonPath("$.logradouro").value("Praça da Sé"));
 
         verify(provedorCep).consultar("01001000");
     }

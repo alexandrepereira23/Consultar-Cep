@@ -1,0 +1,9 @@
+aplicacao:
+  api-key:
+    habilitada: false
+  rate-limit:
+    habilitado: true
+    requisicoes: 120
+    janela: 1m
+  cors:
+    origens-permitidas: http://localhost:4200

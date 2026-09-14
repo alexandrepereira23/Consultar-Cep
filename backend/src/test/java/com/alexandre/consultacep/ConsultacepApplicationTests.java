@@ -28,6 +28,7 @@ class ConsultacepApplicationTests {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.openapi").exists())
 				.andExpect(jsonPath("$.paths['/api/v1/ceps/{cep}']").exists())
+				.andExpect(jsonPath("$.paths['/api/v1/painel/ceps/{cep}']").exists())
 				.andExpect(jsonPath("$.components.schemas.EnderecoBasicoResponse").exists())
 				.andExpect(jsonPath("$.components.schemas.EnderecoDetalhadoResponse").exists())
 				.andExpect(jsonPath("$.components.schemas.LocalizacaoResponse").exists())

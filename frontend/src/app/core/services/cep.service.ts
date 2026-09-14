@@ -31,7 +31,7 @@ export class CepService {
       return throwError(() => new CepConsultaErro('cep-invalido'));
     }
 
-    return this.http.get<EnderecoApiResponse>(`${this.apiUrl}/ceps/${cep}/detalhes`).pipe(
+    return this.http.get<EnderecoApiResponse>(`${this.apiUrl}/painel/ceps/${cep}/detalhes`).pipe(
       map((resposta) => this.mapearEndereco(resposta)),
       catchError((erro: unknown) => throwError(() => this.mapearErro(erro))),
     );

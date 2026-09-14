@@ -58,7 +58,7 @@ describe('CepService', () => {
 
     service.buscar('01001-000').subscribe((endereco) => enderecoRecebido = endereco);
 
-    const requisicao = http.expectOne('http://localhost:8080/api/v1/ceps/01001000/detalhes');
+    const requisicao = http.expectOne('http://localhost:8080/api/v1/painel/ceps/01001000/detalhes');
     expect(requisicao.request.method).toBe('GET');
     requisicao.flush(respostaApi);
 
@@ -84,7 +84,7 @@ describe('CepService', () => {
 
     service.buscar('12345678').subscribe({ error: (erro: unknown) => erroRecebido = erro });
 
-    const requisicao = http.expectOne('http://localhost:8080/api/v1/ceps/12345678/detalhes');
+    const requisicao = http.expectOne('http://localhost:8080/api/v1/painel/ceps/12345678/detalhes');
     requisicao.flush(null, { status: 400, statusText: 'Bad Request' });
 
     expect(erroRecebido).toBeInstanceOf(CepConsultaErro);
@@ -96,7 +96,7 @@ describe('CepService', () => {
 
     service.buscar('99999-999').subscribe({ error: (erro: unknown) => erroRecebido = erro });
 
-    const requisicao = http.expectOne('http://localhost:8080/api/v1/ceps/99999999/detalhes');
+    const requisicao = http.expectOne('http://localhost:8080/api/v1/painel/ceps/99999999/detalhes');
     requisicao.flush(null, { status: 404, statusText: 'Not Found' });
 
     expect(erroRecebido).toBeInstanceOf(CepConsultaErro);
@@ -108,7 +108,7 @@ describe('CepService', () => {
 
     service.buscar('01001000').subscribe({ error: (erro: unknown) => erroRecebido = erro });
 
-    const requisicao = http.expectOne('http://localhost:8080/api/v1/ceps/01001000/detalhes');
+    const requisicao = http.expectOne('http://localhost:8080/api/v1/painel/ceps/01001000/detalhes');
     requisicao.flush(null, { status: 0, statusText: 'Unknown Error' });
 
     expect(erroRecebido).toBeInstanceOf(CepConsultaErro);
@@ -120,7 +120,7 @@ describe('CepService', () => {
 
     service.buscar('01001000').subscribe({ error: (erro: unknown) => erroRecebido = erro });
 
-    const requisicao = http.expectOne('http://localhost:8080/api/v1/ceps/01001000/detalhes');
+    const requisicao = http.expectOne('http://localhost:8080/api/v1/painel/ceps/01001000/detalhes');
     requisicao.flush(null, { status: 500, statusText: 'Internal Server Error' });
 
     expect(erroRecebido).toBeInstanceOf(CepConsultaErro);
@@ -132,7 +132,7 @@ describe('CepService', () => {
 
     service.buscar('01001000').subscribe({ error: (erro: unknown) => erroRecebido = erro });
 
-    const requisicao = http.expectOne('http://localhost:8080/api/v1/ceps/01001000/detalhes');
+    const requisicao = http.expectOne('http://localhost:8080/api/v1/painel/ceps/01001000/detalhes');
     requisicao.flush(null, { status: 503, statusText: 'Service Unavailable' });
 
     expect(erroRecebido).toBeInstanceOf(CepConsultaErro);
@@ -144,7 +144,7 @@ describe('CepService', () => {
 
     service.buscar('01001000').subscribe({ error: (erro: unknown) => erroRecebido = erro });
 
-    const requisicao = http.expectOne('http://localhost:8080/api/v1/ceps/01001000/detalhes');
+    const requisicao = http.expectOne('http://localhost:8080/api/v1/painel/ceps/01001000/detalhes');
     requisicao.flush(null, { status: 502, statusText: 'Bad Gateway' });
 
     expect(erroRecebido).toBeInstanceOf(CepConsultaErro);
