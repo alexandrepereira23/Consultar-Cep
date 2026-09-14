@@ -174,15 +174,32 @@ O frontend estará disponível em:
 http://localhost:4200
 ```
 
-#### Configuração da URL da API no Frontend
+#### Configuração de Ambientes e URL da API no Frontend
 
-O frontend consome a API através da propriedade `apiBaseUrl` definida em:
-```txt
-frontend/src/environments/environment.ts
-```
+O frontend gerencia as URLs da API através dos arquivos de environment do Angular:
 
-* Em desenvolvimento local aponta para: `http://localhost:8080/api/v1`
-* Para publicação na Vercel ou outro servidor web, atualize o valor de `apiBaseUrl` com o domínio da sua API (ex.: `https://seu-backend.railway.app/api/v1`).
+* **Desenvolvimento local:** utiliza `frontend/src/environments/environment.ts`:
+  ```ts
+  export const environment = {
+    apiBaseUrl: 'http://localhost:8080/api/v1'
+  };
+  ```
+
+* **Produção (Vercel ou servidor estático):** utiliza `frontend/src/environments/environment.prod.ts` através do `fileReplacements` configurado no `angular.json`:
+  ```ts
+  export const environment = {
+    apiBaseUrl: 'https://seu-backend.railway.app/api/v1'
+  };
+  ```
+
+Antes de realizar o deploy na Vercel:
+1. Ajuste a propriedade `apiBaseUrl` no arquivo `frontend/src/environments/environment.prod.ts` com a URL pública real fornecida pelo Railway (ex.: `https://consultar-cep-backend.up.railway.app/api/v1`).
+2. O build de produção do Angular (`npm run build`) substituirá automaticamente o `environment.ts` pelo `environment.prod.ts`.
+
+> **Importante de Segurança**:
+> * O frontend Angular **nunca** deve receber `API_KEY_VALOR`.
+> * `API_KEY_VALOR` é um segredo exclusivo do backend e deve ser configurado apenas nas variáveis de ambiente do Railway (ou no servidor de hospedagem do backend).
+> * A Vercel **não deve** armazenar nenhuma API key do backend, pois qualquer variável enviada ao frontend ficaria exposta no código JavaScript acessível aos usuários no navegador.
 
 ---
 
