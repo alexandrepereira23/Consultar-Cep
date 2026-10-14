@@ -72,7 +72,7 @@ backend/    API Spring Boot
 
 ## Ambientes e Configuração
 
-O projeto foi projetado utilizando variáveis de ambiente genéricas, permitindo deploy inicial no **Railway** (backend) e na **Vercel** (frontend), além de suportar migração futura para infraestrutura própria (Docker, VM, Kubernetes) sem acoplamento a provedores específicos.
+O backend está sendo migrado do **Railway** para uma VPS com Docker Compose e Caddy. O frontend Angular permanece na **Vercel**. O Compose e o workflow que integram as duas APIs estão documentados no repositório Voll.med, em `docs/DEPLOY_VPS.md`.
 
 ### Arquivo `.env.example`
 
@@ -92,7 +92,8 @@ VIACEP_URL_BASE=https://viacep.com.br/ws
 BRASILAPI_URL_BASE=https://brasilapi.com.br/api/cep/v2
 
 # Frontend - Angular/Vercel
-API_BASE_URL=https://seu-backend.railway.app
+# A URL de produção fica em frontend/src/environments/environment.prod.ts.
+# API_BASE_URL não é lida automaticamente pelo build Angular.
 ```
 
 > **Atenção de Segurança**: Nunca comite chaves ou segredos reais no repositório. Nunca coloque `API_KEY_VALOR` no código ou variáveis públicas do frontend Angular.
@@ -105,7 +106,7 @@ API_BASE_URL=https://seu-backend.railway.app
   * Rate limit relaxado (120 req/min).
   * CORS liberado para `http://localhost:4200`.
   * Swagger/OpenAPI habilitado.
-* `application-prod.yml`: Perfil voltado para produção (Railway ou servidor próprio):
+* `application-prod.yml`: Perfil voltado para produção na VPS:
   * API Key habilitada obrigatoriamente (`aplicacao.api-key.habilitada=true`, `valor: ${API_KEY_VALOR}`).
   * CORS obrigatório (`aplicacao.cors.origens-permitidas: ${CORS_ORIGENS_PERMITIDAS}`). Suporta uma origem ou múltiplas separadas por vírgula (ex.: `https://meu-app.vercel.app,https://outro-dominio.com`).
   * Rate limit padrão de 60 req/min configurável por `RATE_LIMIT_REQUISICOES` e `RATE_LIMIT_JANELA`.
@@ -140,12 +141,12 @@ Por padrão, a API estará acessível em:
 http://localhost:8080
 ```
 
-#### Executando em Produção (Railway ou Servidor Próprio)
+#### Executando em Produção na VPS
 
 Defina as variáveis no painel da sua plataforma de hospedagem:
 
 * `SPRING_PROFILES_ACTIVE`: `prod`
-* `PORT`: atribuído automaticamente pelo Railway ou definido manualmente (ex.: `8080`).
+* `PORT`: definido como `8080` pelo Docker Compose na VPS.
 * `API_KEY_VALOR`: chave secreta forte para proteger endpoints de integração.
 * `CORS_ORIGENS_PERMITIDAS`: URL do frontend (ex.: `https://seu-frontend.vercel.app` ou múltiplas separadas por vírgula).
 * `RATE_LIMIT_REQUISICOES`: limite de requisições (ex.: `60`).
@@ -188,17 +189,17 @@ O frontend gerencia as URLs da API através dos arquivos de environment do Angul
 * **Produção (Vercel ou servidor estático):** utiliza `frontend/src/environments/environment.prod.ts` através do `fileReplacements` configurado no `angular.json`:
   ```ts
   export const environment = {
-    apiBaseUrl: 'https://seu-backend.railway.app/api/v1'
+    apiBaseUrl: 'https://api-cep.usenexora.online/api/v1'
   };
   ```
 
 Antes de realizar o deploy na Vercel:
-1. Ajuste a propriedade `apiBaseUrl` no arquivo `frontend/src/environments/environment.prod.ts` com a URL pública real fornecida pelo Railway (ex.: `https://consultar-cep-backend.up.railway.app/api/v1`).
+1. Ajuste `apiBaseUrl` em `frontend/src/environments/environment.prod.ts` para `https://api-cep.usenexora.online/api/v1`.
 2. O build de produção do Angular (`npm run build`) substituirá automaticamente o `environment.ts` pelo `environment.prod.ts`.
 
 > **Importante de Segurança**:
 > * O frontend Angular **nunca** deve receber `API_KEY_VALOR`.
-> * `API_KEY_VALOR` é um segredo exclusivo do backend e deve ser configurado apenas nas variáveis de ambiente do Railway (ou no servidor de hospedagem do backend).
+> * `API_KEY_VALOR` é um segredo exclusivo do backend e deve ficar somente no `.env` da VPS.
 > * A Vercel **não deve** armazenar nenhuma API key do backend, pois qualquer variável enviada ao frontend ficaria exposta no código JavaScript acessível aos usuários no navegador.
 
 ---
